@@ -1,0 +1,5 @@
+app/code/community/Magmodules/Channableapi            app/code/community/Magmodules/Channableapi
+app/etc/modules/Magmodules_Channableapi.xml            app/etc/modules/Magmodules_Channableapi.xml
+app/locale/en_US/Magmodules_Channableapi.csv            app/locale/en_US/Magmodules_Channableapi.csv
+app/locale/nl_NL/Magmodules_Channableapi.csv            app/locale/nl_NL/Magmodules_Channableapi.csv
+app/design/adminhtml/default/default/layout/magmodules_channableapi.xml            app/design/adminhtml/default/default/layout/magmodules_channableapi.xml

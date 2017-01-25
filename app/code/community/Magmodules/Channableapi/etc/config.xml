@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+
+<!--
+  ~ Magmodules.eu - http://www.magmodules.eu
+  ~
+  ~ NOTICE OF LICENSE
+  ~ This source file is subject to the Open Software License (OSL 3.0)
+  ~ that is bundled with this package in the file LICENSE.txt.
+  ~ It is also available through the world-wide-web at this URL:
+  ~ http://opensource.org/licenses/osl-3.0.php
+  ~ If you did not receive a copy of the license and are unable to
+  ~ obtain it through the world-wide-web, please send an email
+  ~ to info@magmodules.eu so we can send you a copy immediately.
+  ~
+  ~ @category      Magmodules
+  ~ @package       Magmodules_Channableapi
+  ~ @author        Magmodules <info@magmodules.eu>
+  ~ @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+  ~ @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  -->
+<config>
+    <modules>
+        <Magmodules_Channableapi>
+            <version>1.1.1</version>
+        </Magmodules_Channableapi>
+    </modules>
+    <global>
+        <helpers>
+            <channableapi>
+                <class>Magmodules_Channableapi_Helper</class>
+            </channableapi>
+        </helpers>
+        <blocks>
+            <channableapi>
+                <class>Magmodules_Channableapi_Block</class>
+            </channableapi>
+        </blocks>
+        <models>
+            <channableapi>
+                <class>Magmodules_Channableapi_Model</class>
+                <resourceModel>channableapi_mysql4</resourceModel>
+            </channableapi>
+            <channableapi_mysql4>
+                <class>Magmodules_Channableapi_Model_Mysql4</class>
+                <entities>
+                    <items>
+                        <table>channable_items</table>
+                    </items>
+                    <debug>
+                        <table>channable_debug</table>
+                    </debug>
+                </entities>
+            </channableapi_mysql4>
+        </models>
+        <resources>
+            <channableapi_setup>
+                <setup>
+                    <module>Magmodules_Channableapi</module>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </channableapi_setup>
+        </resources>
+        <events>
+            <cataloginventory_stock_item_save_after>
+                <observers>
+                    <channable_items>
+                        <type>singleton</type>
+                        <class>Magmodules_Channableapi_Model_Observer</class>
+                        <method>cataloginventory_stock_item_save_after</method>
+                    </channable_items>
+                </observers>
+            </cataloginventory_stock_item_save_after>
+            <sales_model_service_quote_submit_before>
+                <observers>
+                    <channable_quote>
+                        <type>singleton</type>
+                        <class>Magmodules_Channableapi_Model_Observer</class>
+                        <method>sales_model_service_quote_submit_before</method>
+                    </channable_quote>
+                </observers>
+            </sales_model_service_quote_submit_before>
+        </events>
+    </global>
+    <frontend>
+        <routers>
+            <channableapi>
+                <use>standard</use>
+                <args>
+                    <module>Magmodules_Channableapi</module>
+                    <frontName>channableapi</frontName>
+                </args>
+            </channableapi>
+        </routers>
+        <secure_url>
+            <channableapi>channableapi</channableapi>
+        </secure_url>
+    </frontend>
+    <adminhtml>
+        <translate>
+            <modules>
+                <magmodules_channableapi>
+                    <files>
+                        <default>Magmodules_Channableapi.csv</default>
+                    </files>
+                </magmodules_channableapi>
+            </modules>
+        </translate>
+        <layout>
+            <updates>
+                <channableapi>
+                    <file>magmodules_channableapi.xml</file>
+                </channableapi>
+            </updates>
+        </layout>
+        <events>
+            <catalog_product_save_before>
+                <observers>
+                    <channable_items>
+                        <type>singleton</type>
+                        <class>Magmodules_Channableapi_Model_Observer</class>
+                        <method>catalog_product_save_before</method>
+                    </channable_items>
+                </observers>
+            </catalog_product_save_before>
+        </events>
+    </adminhtml>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <magmodules_channableapi after="Mage_Adminhtml">Magmodules_Channableapi_Adminhtml
+                        </magmodules_channableapi>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+    <crontab>
+        <jobs>
+            <channableapi_items>
+                <schedule>
+                    <config_path>channable_api/crons/cron_schedule</config_path>
+                </schedule>
+                <run>
+                    <model>channableapi/observer::shopitemApi</model>
+                </run>
+            </channableapi_items>
+            <channableapi_itemcleanup>
+                <schedule>
+                    <cron_expr>0 0 * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>channableapi/observer::cleanItems</model>
+                </run>
+            </channableapi_itemcleanup>
+        </jobs>
+    </crontab>
+    <default>
+        <payment>
+            <channable>
+                <active>1</active>
+                <model>channableapi/payment_channable</model>
+                <order_status>pending</order_status>
+                <title>Channable Payment Method</title>
+            </channable>
+        </payment>
+        <channable_api>
+            <order>
+                <enabled>0</enabled>
+                <shipping_method>flatrate_flatrate</shipping_method>
+                <shipping_method_fallback>flatrate_flatrate</shipping_method_fallback>
+                <import_customers>0</import_customers>
+                <invoice_order>1</invoice_order>
+                <seperate_housenumber>1</seperate_housenumber>
+            </order>
+            <crons>
+                <limit>20</limit>
+            </crons>
+        </channable_api>
+        <carriers>
+            <channableapi>
+                <active>1</active>
+                <model>Magmodules_Channableapi_Model_Carrier_ChannableMethod</model>
+                <name>Channable Shipping</name>
+                <title>Channable Shipping</title>
+                <sort_order>100</sort_order>
+            </channableapi>
+        </carriers>
+    </default>
+</config>

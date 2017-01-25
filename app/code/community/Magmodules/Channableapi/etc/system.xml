@@ -1,0 +1,375 @@
+<?xml version="1.0"?>
+
+<!--
+  ~ Magmodules.eu - http://www.magmodules.eu
+  ~
+  ~ NOTICE OF LICENSE
+  ~ This source file is subject to the Open Software License (OSL 3.0)
+  ~ that is bundled with this package in the file LICENSE.txt.
+  ~ It is also available through the world-wide-web at this URL:
+  ~ http://opensource.org/licenses/osl-3.0.php
+  ~ If you did not receive a copy of the license and are unable to
+  ~ obtain it through the world-wide-web, please send an email
+  ~ to info@magmodules.eu so we can send you a copy immediately.
+  ~
+  ~ @category      Magmodules
+  ~ @package       Magmodules_Channableapi
+  ~ @author        Magmodules <info@magmodules.eu>
+  ~ @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+  ~ @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  -->
+<config>
+    <tabs>
+        <magmodules translate="label" module="channableapi">
+            <label>Magmodules</label>
+            <sort_order>200</sort_order>
+        </magmodules>
+    </tabs>
+    <sections>
+        <channable_api translate="label" module="channableapi">
+            <label>Channable Order API</label>
+            <tab>magmodules</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>103</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <info>
+                    <frontend_model>channableapi/adminhtml_widget_info_info</frontend_model>
+                    <sort_order>1</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                </info>
+                <general translate="label" module="channableapi">
+                    <label>General - Settings</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>2</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </enabled>
+                        <version translate="label">
+                            <label>Extension Version</label>
+                            <frontend_type>text</frontend_type>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_version</frontend_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </version>
+                    </fields>
+                </general>
+                <order translate="label" module="channableapi">
+                    <label>Order API Settings</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>3</sort_order>
+                    <show_in_default>0</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </enabled>
+                        <shipping_heading translate="label">
+                            <label>Shipping Method</label>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_heading</frontend_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </shipping_heading>
+                        <shipping_method translate="label">
+                            <label>Default Shipping Method</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>channableapi/adminhtml_system_config_source_shippingmethods</source_model>
+                            <sort_order>21</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </shipping_method>
+                        <shipping_method_fallback translate="label">
+                            <label>Fallback for Shipping Method</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>channableapi/adminhtml_system_config_source_shippingmethods</source_model>
+                            <sort_order>22</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <tooltip>Fallback for the default shipping method, e.g. free shipment</tooltip>
+                        </shipping_method_fallback>
+                        <customers_heading translate="label">
+                            <label>Customers</label>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_heading</frontend_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </customers_heading>
+                        <import_customers translate="label">
+                            <label>Import Customers</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>31</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </import_customers>
+                        <customers_group translate="label">
+                            <label>Group</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>channableapi/adminhtml_system_config_source_customergroups</source_model>
+                            <sort_order>32</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <import_customers>1</import_customers>
+                            </depends>
+                        </customers_group>
+                        <customers_address translate="label">
+                            <label>Address &amp; Invoice</label>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_heading</frontend_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </customers_address>
+                        <seperate_housenumber translate="label">
+                            <label>Separate housenumber</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>41</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment><![CDATA[If you use the second 'street' field as a separate house-number field, enable this option.]]></comment>
+                        </seperate_housenumber>
+                        <invoice_order translate="label">
+                            <label>Create invoice for order</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>42</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </invoice_order>
+                    </fields>
+                </order>
+                <item translate="label" module="channableapi">
+                    <label>Item API Settings</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>4</sort_order>
+                    <show_in_default>0</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </enabled>
+                        <webhook translate="label">
+                            <label>Webhook</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>2</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <enabled>1</enabled>
+                            </depends>
+                        </webhook>
+                    </fields>
+                </item>
+                <crons translate="label" module="channableapi">
+                    <label>Cron Settings</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>4</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <frequency translate="label">
+                            <label>Item Cron Frequency</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>channableapi/adminhtml_system_config_source_frequency</source_model>
+                            <backend_model>channableapi/adminhtml_system_config_backend_channableapi_cron</backend_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </frequency>
+                        <limit translate="label">
+                            <label>Product Limit</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>3</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <tooltip>Set a limit on the number of products for each update.</tooltip>
+                        </limit>
+                    </fields>
+                </crons>
+                <available translate="label" module="channableapi">
+                    <label>Urls</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>5</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <note translate="label">
+                            <label><![CDATA[In order to use the Channable API, you have to set the API settings on the store level where you want to import the orders from Channable. The settings are only visible when you have the right store-view selected through the store switcher on the top left.]]></label>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_note</frontend_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </note>
+                        <apiurls translate="label">
+                            <label>Text</label>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_api</frontend_model>
+                            <sort_order>11</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </apiurls>
+                    </fields>
+                </available>
+                <debug>
+                    <label>Debug</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>6</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <expanded>0</expanded>
+                    <fields>
+                        <debug translate="label">
+                            <label>Debug Item Call</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>3</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Show API debug code on single item update request (Channable Item update grid), only enable this when errors occur in request.</comment>
+                        </debug>
+                        <log translate="label">
+                            <label>Log All Updates</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>4</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Write all mutations to the Channable debug table.</comment>
+                        </log>
+                    </fields>
+                </debug>
+            </groups>
+        </channable_api>
+        <carriers>
+            <groups>
+                <channableapi translate="label" module="shipping">
+                    <label>Channable Shipping Method</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>103</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <name translate="label">
+                            <label>Name</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>3</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </name>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>4</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </sort_order>
+                    </fields>
+                </channableapi>
+            </groups>
+        </carriers>
+        <payment>
+            <groups>
+                <channable translate="label" module="channableapi">
+                    <label>Channable Payment Method</label>
+                    <sort_order>670</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <name translate="label">
+                            <label>Name</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </name>
+                        <title translate="label">
+                            <label>Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                    </fields>
+                </channable>
+            </groups>
+        </payment>
+    </sections>
+</config>
