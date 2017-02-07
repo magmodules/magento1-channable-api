@@ -99,7 +99,7 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         $whitelisted = Mage::getStoreConfig('channable_api/general/whitelisted_ips');
         if (!empty($whitelisted)) {
             $ips = explode(',', $whitelisted);
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = Mage::helper('core/http')->getRemoteAddr(true);
             if (!in_array($ip, $ips)) {
                 $response = array();
                 $response['validated'] = 'false';
