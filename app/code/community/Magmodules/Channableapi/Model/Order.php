@@ -53,7 +53,11 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 $lastname = $order['customer']['last_name'];
             }
 
-            $quote->setCustomerEmail($order['customer']['email'])->setCustomerFirstname($order['customer']['first_name'])->setCustomerLastname($lastname)->setCustomerIsGuest(true)->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID);
+            $quote->setCustomerEmail($order['customer']['email'])
+                ->setCustomerFirstname($order['customer']['first_name'])
+                ->setCustomerLastname($lastname)
+                ->setCustomerIsGuest(true)
+                ->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID);
             $customerId = '';
         }
 
@@ -105,8 +109,14 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             Mage::getSingleton('core/session')->setChannableShipping($shippingPriceCal);
 
             $shippingMethod = $this->_getShippingMethod($quote, $shippingAddress, $total, $weight, $config);
-            $quote->getBillingAddress()->addData($billingAddress);
-            $quote->getShippingAddress()->addData($shippingAddress)->setShippingMethod($shippingMethod)->setPaymentMethod($config['payment_method'])->setCollectShippingRates(true)->collectTotals();
+            $quote->getBillingAddress()
+                ->addData($billingAddress);
+            $quote->getShippingAddress()
+                ->addData($shippingAddress)
+                ->setShippingMethod($shippingMethod)
+                ->setPaymentMethod($config['payment_method'])
+                ->setCollectShippingRates(true)
+                ->collectTotals();
             $quote->getPayment()->importData(array('method' => $config['payment_method']));
             $quote->save();
             $service = Mage::getModel('sales/service_quote', $quote);
@@ -120,7 +130,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                     $order['channel_id']
                 );
                 $_order->addStatusHistoryComment($orderComment, false);
-                $_order->setChannableId($order['channable_id'])->setChannelId($order['channel_id'])->setChannelName($order['channel_name'])->save();
+                $_order->setChannableId($order['channable_id'])
+                    ->setChannelId($order['channel_id'])
+                    ->setChannelName($order['channel_name'])
+                    ->save();
             } elseif (!empty($order['channable_id'])) {
                 $_order->setChannableId($order['channable_id'])->save();
             }
@@ -312,7 +325,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             'country_id'  => $address['country_code'],
             'postcode'    => $address['zip_code'],
             'telephone'   => $telephone,
-            'state'       => '',
+            'state'       => $address['state'],
         );
 
         if (!empty($config['import_customers'])) {
@@ -322,9 +335,19 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         if (!empty($config['import_customers']) && ($customerId > 0)) {
             try {
                 if ($type == 'billing') {
-                    Mage::getModel("customer/address")->setData($addressData)->setCustomerId($customerId)->setIsDefaultBilling('1')->setSaveInAddressBook('1')->save();
+                    Mage::getModel("customer/address")
+                        ->setData($addressData)
+                        ->setCustomerId($customerId)
+                        ->setIsDefaultBilling('1')
+                        ->setSaveInAddressBook('1')
+                        ->save();
                 } else {
-                    Mage::getModel("customer/address")->setData($addressData)->setCustomerId($customerId)->setIsDefaultShipping('1')->setSaveInAddressBook('1')->save();
+                    Mage::getModel("customer/address")
+                        ->setData($addressData)
+                        ->setCustomerId($customerId)
+                        ->setIsDefaultShipping('1')
+                        ->setSaveInAddressBook('1')
+                        ->save();
                 }
             } catch (Exception $e) {
                 return $this->_jsonRepsonse($e->getMessage(), '', $order['channable_id']);
