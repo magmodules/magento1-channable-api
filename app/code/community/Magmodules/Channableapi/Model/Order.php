@@ -329,7 +329,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         );
 
         if (!empty($config['import_customers'])) {
-            $address_data['save_in_address_book'] = 1;
+            $addressData['save_in_address_book'] = 1;
         }
 
         if (!empty($config['import_customers']) && ($customerId > 0)) {
