@@ -314,18 +314,24 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $street = trim($address['street'] . ' ' . $address['house_number'] . ' ' . $address['house_number_ext']);
         }
 
+        $state = '';
+        if (!empty($address['state'])) {
+            $state = $address['state'];
+        }
+
         $addressData = array(
             'customer_id' => $customerId,
             'company'     => $address['company'],
             'firstname'   => $address['first_name'],
             'middlename'  => $address['middle_name'],
             'lastname'    => $address['last_name'],
+            'email'       => $order['customer']['email'],
             'street'      => $street,
             'city'        => $address['city'],
             'country_id'  => $address['country_code'],
             'postcode'    => $address['zip_code'],
             'telephone'   => $telephone,
-            'state'       => $address['state'],
+            'state'       => $state,
         );
 
         if (!empty($config['import_customers'])) {
@@ -407,8 +413,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 }
             }
 
-            if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
-                $fallback = $carriercode . '_' . $method;
+            if ($carriercode == $fallbackCarrier[0]) {
+                if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
+                    $fallback = $carriercode . '_' . $method;
+                }
             }
         }
 
