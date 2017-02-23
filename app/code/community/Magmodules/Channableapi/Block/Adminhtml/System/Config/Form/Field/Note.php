@@ -18,7 +18,8 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note extends Mage_Adminhtml_Block_Abstract implements Varien_Data_Form_Element_Renderer_Interface
+class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note
+    extends Mage_Adminhtml_Block_Abstract implements Varien_Data_Form_Element_Renderer_Interface
 {
 
     /**

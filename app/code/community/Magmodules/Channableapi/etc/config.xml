@@ -21,7 +21,7 @@
 <config>
     <modules>
         <Magmodules_Channableapi>
-            <version>1.1.1</version>
+            <version>1.1.2</version>
         </Magmodules_Channableapi>
     </modules>
     <global>
@@ -131,8 +131,7 @@
             <adminhtml>
                 <args>
                     <modules>
-                        <magmodules_channableapi after="Mage_Adminhtml">Magmodules_Channableapi_Adminhtml
-                        </magmodules_channableapi>
+                        <magmodules_channableapi after="Mage_Adminhtml">Magmodules_Channableapi_Adminhtml</magmodules_channableapi>
                     </modules>
                 </args>
             </adminhtml>
