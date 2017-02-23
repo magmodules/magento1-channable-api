@@ -186,6 +186,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         $config['debug'] = Mage::getStoreConfig('channable_api/debug/debug');
         $config['log'] = Mage::getStoreConfig('channable_api/debug/log');
         $config['conf_enabled'] = Mage::getStoreConfig('channable/data/conf_enabled', $storeId);
+        $config['simple_price'] = Mage::getStoreConfig('channable/data/simple_price', $storeId);
 
         if ($config['conf_enabled']) {
             $fields = Mage::getStoreConfig('channable/data/conf_fields', $storeId);
@@ -291,6 +292,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
             $parent = $this->getProductData($parentId, $item->getStoreId(), $config);
             $confPrices = Mage::helper('channable')->getTypePrices($config, array($parent));
         } else {
+            $confPrices = '';
             $parentId = '';
         }
 
@@ -331,42 +333,20 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
             $update['availability'] = 0;
         }
 
-        $price = '';
-        $finalPrice = '';
+        $priceData = Mage::helper('channable')->getProductPrice($product, $config);
+        $prices = Mage::getModel('channable/channable')->getPrices($priceData, $confPrices, $product, '', $parentId);
+        $calValue = '0.00';
 
-        if (empty($confPrices)) {
-            $price = Mage::helper('tax')->getPrice($product, $product->getPrice(), $config['use_tax']);
-            $finalPrice = Mage::helper('tax')->getPrice($product, $product->getFinalPrice(), $config['use_tax']);
-            if (!empty($config['markup'])) {
-                $price = ($price * $config['markup']);
-                $finalPrice = ($finalPrice * $config['markup']);
+        if (!empty($prices)) {
+            if (!empty($prices['discount_price'])) {
+                $update['price'] = trim($prices['price']);
+                $update['discount_price'] = trim($prices['sales_price']);
+                $calValue = $update['price'];
+            } else {
+                $update['price'] = trim($prices['price']);
+                $update['discount_price'] = '';
+                $calValue = $update['price'];
             }
-        } else {
-            if (isset($confPrices[$product->getEntityId() . '_reg'])) {
-                $price = $confPrices[$product->getEntityId() . '_reg'];
-            }
-
-            if (isset($confPrices[$parentId . '_' . $product->getEntityId() . '_reg'])) {
-                $price = $confPrices[$parentId . '_' . $product->getEntityId() . '_reg'];
-            }
-
-            if (isset($confPrices[$product->getEntityId()])) {
-                $finalPrice = $confPrices[$product->getEntityId()];
-            }
-
-            if (isset($confPrices[$parentId . '_' . $product->getEntityId()])) {
-                $finalPrice = $confPrices[$parentId . '_' . $product->getEntityId()];
-            }
-        }
-
-        if ($finalPrice < $price) {
-            $update['price'] = number_format($price, 2, '.', '');
-            $update['discount_price'] = number_format($finalPrice, 2, '.', '');
-            $calValue = $finalPrice;
-        } else {
-            $update['price'] = number_format($price, 2, '.', '');
-            $update['discount_price'] = '';
-            $calValue = $price;
         }
 
         if ($config['shipping_method'] == 'weight') {
