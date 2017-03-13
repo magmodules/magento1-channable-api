@@ -42,8 +42,21 @@ class Magmodules_Channableapi_Model_Adminhtml_System_Config_Source_Shippingmetho
                     );
                 }
             }
+        }
 
-            $methods[] = array('value' => $options, 'label' => $carrierTitle);
+        if (Mage::helper('core')->isModuleEnabled('Parcelshipper_Paazl')) {
+            $allCarriers[] = array(
+                'value'      => 'paazl_avg',
+                'label'      => "Paazl AVG"
+            );
+            $allCarriers[] = array(
+                'value'      => 'paazl_eps',
+                'label'      => "Paazl EPS"
+            );
+            $allCarriers[] = array(
+                'value'      => 'paazl_rembours',
+                'label'      => "Paazl Rembours"
+            );
         }
 
         return $allCarriers;
