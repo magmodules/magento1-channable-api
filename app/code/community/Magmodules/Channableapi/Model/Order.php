@@ -306,13 +306,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $telephone = $order['customer']['mobile'];
         }
 
-        if (!empty($config['seperate_housenumber'])) {
-            $street1 = $address['street'];
-            $street2 = trim($address['house_number'] . ' ' . $address['house_number_ext']);
-            $street = $street1 . "\n" . $street2;
-        } else {
-            $street = trim($address['street'] . ' ' . $address['house_number'] . ' ' . $address['house_number_ext']);
-        }
+        $street = $this->_getStreet($address, $config['seperate_housenumber']);
 
         $state = '';
         if (!empty($address['state'])) {
@@ -361,6 +355,27 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         }
 
         return $addressData;
+    }
+
+    protected function _getStreet($address, $seperateHousnumber)
+    {
+        $street = array();
+        if (!empty($seperateHousnumber)) {
+            $street[] = $address['street'];
+            $street[] = trim($address['house_number'] . ' ' . $address['house_number_ext']);
+            $street = implode("\n", $street);
+        } else {
+            if (!empty($address['address_line_1'])) {
+                $street[] = $address['address_line_1'];
+                $street[] = $address['address_line_2'];
+                $street = implode("\n", $street);
+            } else {
+                $street  = $address['street'] . ' ';
+                $street .= trim($address['house_number'] . ' ' . $address['house_number_ext']);
+            }
+        }
+
+        return $street;
     }
 
     /**

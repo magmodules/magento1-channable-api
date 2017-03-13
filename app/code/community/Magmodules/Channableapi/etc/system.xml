@@ -106,11 +106,23 @@
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
                         </shipping_method>
+                        <paazl_priority>
+                            <label>Paazl Priority</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>22</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Comma seperated from high to low</comment>
+                            <depends>
+                                <shipping_method>paazl_paazl</shipping_method>
+                            </depends>
+                        </paazl_priority>
                         <shipping_method_fallback translate="label">
                             <label>Fallback for Shipping Method</label>
                             <frontend_type>select</frontend_type>
                             <source_model>channableapi/adminhtml_system_config_source_shippingmethods</source_model>
-                            <sort_order>22</sort_order>
+                            <sort_order>23</sort_order>
                             <show_in_default>0</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
