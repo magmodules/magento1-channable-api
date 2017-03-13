@@ -106,18 +106,18 @@
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
                         </shipping_method>
-                        <paazl_priority>
-                            <label>Paazl Priority</label>
+                        <shipping_method_custom>
+                            <label>Custom Logic</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>22</sort_order>
                             <show_in_default>0</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
-                            <comment>Comma seperated from high to low</comment>
+                            <comment><![CDATA[Use custom carrier codes logic, seprated by semicolumn. Eg. paazl_avg;paazl_eps</br>.]]></comment>
                             <depends>
-                                <shipping_method>paazl_paazl</shipping_method>
+                                <shipping_method>custom</shipping_method>
                             </depends>
-                        </paazl_priority>
+                        </shipping_method_custom>
                         <shipping_method_fallback translate="label">
                             <label>Fallback for Shipping Method</label>
                             <frontend_type>select</frontend_type>

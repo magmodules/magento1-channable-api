@@ -176,10 +176,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $config['store_id'] = $storeId;
         $config['payment_method'] = 'channable';
         $config['shipping_method'] = Mage::getStoreConfig('channable_api/order/shipping_method', $storeId);
-        $config['shipping_method_fallback'] = Mage::getStoreConfig(
-            'channable_api/order/shipping_method_fallback',
-            $storeId
-        );
+        $config['shipping_method_fallback'] =
+            Mage::getStoreConfig('channable_api/order/shipping_method_fallback', $storeId);
+        $config['shipping_method_custom'] =
+            Mage::getStoreConfig('channable_api/order/shipping_method_custom', $storeId);
         $config['import_customers'] = Mage::getStoreConfig('channable_api/order/import_customers', $storeId);
         $config['customers_group'] = Mage::getStoreConfig('channable_api/order/customers_group', $storeId);
         $config['customers_mailing'] = Mage::getStoreConfig('channable_api/order/customers_mailing', $storeId);
@@ -417,24 +417,37 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             ->setBaseSubtotalInclTax($total);
 
         $model = Mage::getModel('shipping/shipping')->collectRates($request);
-        $defaultCarrier = explode('_', $shippingMethod);
-        $fallbackCarrier = explode('_', $shippingMethodFallback);
-        $carrierPrice = '';
-        $fallbackPrice = '';
 
-        foreach ($model->getResult()->getAllRates() as $rate) {
-            $carriercode = $rate->getCarrier();
-            $method = $rate->getMethod();
-            $price = $rate->getPrice();
-            if ($carriercode == $defaultCarrier[0]) {
-                if (empty($carrierPrice) || ($price > $carrierPrice)) {
-                    $carrier = $carriercode . '_' . $method;
+        if ($shippingMethod != 'custom') {
+            $defaultCarrier = explode('_', $shippingMethod);
+            $fallbackCarrier = explode('_', $shippingMethodFallback);
+            $carrierPrice = '';
+            $fallbackPrice = '';
+            foreach ($model->getResult()->getAllRates() as $rate) {
+                $carriercode = $rate->getCarrier();
+                $method = $rate->getMethod();
+                $price = $rate->getPrice();
+                if ($carriercode == $defaultCarrier[0]) {
+                    if (empty($carrierPrice) || ($price > $carrierPrice)) {
+                        $carrier = $carriercode . '_' . $method;
+                    }
+                }
+
+                if ($carriercode == $fallbackCarrier[0]) {
+                    if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
+                        $fallback = $carriercode . '_' . $method;
+                    }
                 }
             }
-
-            if ($carriercode == $fallbackCarrier[0]) {
-                if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
-                    $fallback = $carriercode . '_' . $method;
+        } else {
+            $prioritizedMethods = array_flip(array_reverse(explode(';', $config['shipping_method_custom'])));
+            $priority = -1;
+            foreach ($model->getResult()->getAllRates() as $rate) {
+                $carriercode = $rate->getCarrier();
+                $method = $rate->getMethod();
+                if (isset($prioritizedMethods[$method]) && $priority < $prioritizedMethods[$method]) {
+                    $carrier = $carriercode . '_' . $method;
+                    $priority = $prioritizedMethods[$method];
                 }
             }
         }
