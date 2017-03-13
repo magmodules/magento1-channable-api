@@ -61,17 +61,34 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $customerId = '';
         }
 
+        $billingAddress = $this->_setQuoteAddress('billing', $order, $config, $customerId);
+        if (!empty($billingAddress['errors'])) {
+            return $billingAddress;
+        } else {
+            $quote->getBillingAddress()->addData($billingAddress);
+        }
+
+        $shippingAddress = $this->_setQuoteAddress('shipping', $order, $config, $customerId);
+        if (!empty($shippingAddress['errors'])) {
+            return $shippingAddress;
+        } else {
+            $quote->getShippingAddress()->addData($shippingAddress);
+        }
+
+        $taxCalculation = Mage::getSingleton('tax/calculation');
         $total = 0;
         $weight = 0;
+
         foreach ($order['products'] as $product) {
             $_product = Mage::getModel('catalog/product')->load($product['id']);
             $price = $product['price'];
 
             // PRICES WITHOUT VAT
             if (empty($config['price_includes_tax'])) {
-                $request = Mage::getSingleton('tax/calculation')->getRateRequest(null, null, null, $store);
+                $request = $taxCalculation
+                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
                 $taxclassid = $_product->getData('tax_class_id');
-                $percent = Mage::getSingleton('tax/calculation')->getRate($request->setProductClassId($taxclassid));
+                $percent = $taxCalculation->getRate($request->setProductClassId($taxclassid));
                 $price = ($product['price'] / (100 + $percent) * 100);
             }
 
@@ -83,20 +100,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             )->setOriginalCustomPrice($price);
         }
 
-        $billingAddress = $this->_setQuoteAddress('billing', $order, $config, $customerId);
-        if (!empty($billingAddress['errors'])) {
-            return $billingAddress;
-        }
-
-        $shippingAddress = $this->_setQuoteAddress('shipping', $order, $config, $customerId);
-        if (!empty($shippingAddress['errors'])) {
-            return $shippingAddress;
-        }
-
         try {
             if (empty($config['shipping_includes_tax'])) {
-                $taxCalculation = Mage::getModel('tax/calculation');
-                $request = $taxCalculation->getRateRequest(null, null, null, $store);
+                $request = $taxCalculation
+                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
                 $taxRateId = Mage::getStoreConfig('tax/classes/shipping_tax_class', $storeId);
                 $percent = $taxCalculation->getRate($request->setProductClassId($taxRateId));
                 $shippingPriceCal = ($order['price']['shipping'] / (100 + $percent) * 100);
@@ -109,10 +116,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             Mage::getSingleton('core/session')->setChannableShipping($shippingPriceCal);
 
             $shippingMethod = $this->_getShippingMethod($quote, $shippingAddress, $total, $weight, $config);
-            $quote->getBillingAddress()
-                ->addData($billingAddress);
             $quote->getShippingAddress()
-                ->addData($shippingAddress)
                 ->setShippingMethod($shippingMethod)
                 ->setPaymentMethod($config['payment_method'])
                 ->setCollectShippingRates(true)
@@ -325,7 +329,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             'country_id'  => $address['country_code'],
             'postcode'    => $address['zip_code'],
             'telephone'   => $telephone,
-            'state'       => $state,
+            'region'      => $state,
         );
 
         if (!empty($config['import_customers'])) {
@@ -370,7 +374,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 $street[] = $address['address_line_2'];
                 $street = implode("\n", $street);
             } else {
-                $street  = $address['street'] . ' ';
+                $street = $address['street'] . ' ';
                 $street .= trim($address['house_number'] . ' ' . $address['house_number_ext']);
             }
         }
