@@ -445,9 +445,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             foreach ($model->getResult()->getAllRates() as $rate) {
                 $carriercode = $rate->getCarrier();
                 $method = $rate->getMethod();
-                if (isset($prioritizedMethods[$method]) && $priority < $prioritizedMethods[$method]) {
-                    $carrier = $carriercode . '_' . $method;
-                    $priority = $prioritizedMethods[$method];
+                $carrierMethod = $carriercode . '_' . $method;
+                if (isset($prioritizedMethods[$carrierMethod]) && $priority < $prioritizedMethods[$carrierMethod]) {
+                    $carrier = $carrierMethod;
+                    $priority = $prioritizedMethods[$carrierMethod];
                 }
             }
         }
