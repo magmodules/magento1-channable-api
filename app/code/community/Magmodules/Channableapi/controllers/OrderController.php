@@ -58,7 +58,7 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
                             $response = $helper->jsonResponse('No validated data');
                         }
                     } else {
-                        $response = $helper->jsonResponse('Missing Data');
+                        $response = $helper->jsonResponse('Empty Data, http -> https redirect?');
                     }
                 } else {
                     $response = $helper->jsonResponse('Unknown Token');
@@ -69,8 +69,11 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
         }
 
         if (!empty($response)) {
-            $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json', true);
-            $this->getResponse()->setBody(json_encode($response));
+            $this->getResponse()
+                ->clearHeaders()
+                ->setHeader('Content-type', 'application/json', true)
+                ->setHeader('Cache-control', 'no-cache', true)
+                ->setBody(json_encode($response));
         }
 
         if ($storeId != Mage::app()->getStore()->getStoreId()) {
@@ -102,8 +105,11 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
         }
 
         if (!empty($response)) {
-            $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json', true);
-            $this->getResponse()->setBody(json_encode($response));
+            $this->getResponse()
+                ->clearHeaders()
+                ->setHeader('Content-type', 'application/json', true)
+                ->setHeader('Cache-control', 'no-cache', true)
+                ->setBody(json_encode($response));
         }
     }
 }

@@ -61,17 +61,34 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $customerId = '';
         }
 
+        $billingAddress = $this->_setQuoteAddress('billing', $order, $config, $customerId);
+        if (!empty($billingAddress['errors'])) {
+            return $billingAddress;
+        } else {
+            $quote->getBillingAddress()->addData($billingAddress);
+        }
+
+        $shippingAddress = $this->_setQuoteAddress('shipping', $order, $config, $customerId);
+        if (!empty($shippingAddress['errors'])) {
+            return $shippingAddress;
+        } else {
+            $quote->getShippingAddress()->addData($shippingAddress);
+        }
+
+        $taxCalculation = Mage::getSingleton('tax/calculation');
         $total = 0;
         $weight = 0;
+
         foreach ($order['products'] as $product) {
             $_product = Mage::getModel('catalog/product')->load($product['id']);
             $price = $product['price'];
 
             // PRICES WITHOUT VAT
             if (empty($config['price_includes_tax'])) {
-                $request = Mage::getSingleton('tax/calculation')->getRateRequest(null, null, null, $store);
+                $request = $taxCalculation
+                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
                 $taxclassid = $_product->getData('tax_class_id');
-                $percent = Mage::getSingleton('tax/calculation')->getRate($request->setProductClassId($taxclassid));
+                $percent = $taxCalculation->getRate($request->setProductClassId($taxclassid));
                 $price = ($product['price'] / (100 + $percent) * 100);
             }
 
@@ -83,20 +100,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             )->setOriginalCustomPrice($price);
         }
 
-        $billingAddress = $this->_setQuoteAddress('billing', $order, $config, $customerId);
-        if (!empty($billingAddress['errors'])) {
-            return $billingAddress;
-        }
-
-        $shippingAddress = $this->_setQuoteAddress('shipping', $order, $config, $customerId);
-        if (!empty($shippingAddress['errors'])) {
-            return $shippingAddress;
-        }
-
         try {
             if (empty($config['shipping_includes_tax'])) {
-                $taxCalculation = Mage::getModel('tax/calculation');
-                $request = $taxCalculation->getRateRequest(null, null, null, $store);
+                $request = $taxCalculation
+                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
                 $taxRateId = Mage::getStoreConfig('tax/classes/shipping_tax_class', $storeId);
                 $percent = $taxCalculation->getRate($request->setProductClassId($taxRateId));
                 $shippingPriceCal = ($order['price']['shipping'] / (100 + $percent) * 100);
@@ -109,10 +116,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             Mage::getSingleton('core/session')->setChannableShipping($shippingPriceCal);
 
             $shippingMethod = $this->_getShippingMethod($quote, $shippingAddress, $total, $weight, $config);
-            $quote->getBillingAddress()
-                ->addData($billingAddress);
             $quote->getShippingAddress()
-                ->addData($shippingAddress)
                 ->setShippingMethod($shippingMethod)
                 ->setPaymentMethod($config['payment_method'])
                 ->setCollectShippingRates(true)
@@ -172,10 +176,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $config['store_id'] = $storeId;
         $config['payment_method'] = 'channable';
         $config['shipping_method'] = Mage::getStoreConfig('channable_api/order/shipping_method', $storeId);
-        $config['shipping_method_fallback'] = Mage::getStoreConfig(
-            'channable_api/order/shipping_method_fallback',
-            $storeId
-        );
+        $config['shipping_method_fallback'] =
+            Mage::getStoreConfig('channable_api/order/shipping_method_fallback', $storeId);
+        $config['shipping_method_custom'] =
+            Mage::getStoreConfig('channable_api/order/shipping_method_custom', $storeId);
         $config['import_customers'] = Mage::getStoreConfig('channable_api/order/import_customers', $storeId);
         $config['customers_group'] = Mage::getStoreConfig('channable_api/order/customers_group', $storeId);
         $config['customers_mailing'] = Mage::getStoreConfig('channable_api/order/customers_mailing', $storeId);
@@ -306,13 +310,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $telephone = $order['customer']['mobile'];
         }
 
-        if (!empty($config['seperate_housenumber'])) {
-            $street1 = $address['street'];
-            $street2 = trim($address['house_number'] . ' ' . $address['house_number_ext']);
-            $street = $street1 . "\n" . $street2;
-        } else {
-            $street = trim($address['street'] . ' ' . $address['house_number'] . ' ' . $address['house_number_ext']);
-        }
+        $street = $this->_getStreet($address, $config['seperate_housenumber']);
 
         $state = '';
         if (!empty($address['state'])) {
@@ -331,7 +329,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             'country_id'  => $address['country_code'],
             'postcode'    => $address['zip_code'],
             'telephone'   => $telephone,
-            'state'       => $state,
+            'region'      => $state,
         );
 
         if (!empty($config['import_customers'])) {
@@ -361,6 +359,27 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         }
 
         return $addressData;
+    }
+
+    protected function _getStreet($address, $seperateHousnumber)
+    {
+        $street = array();
+        if (!empty($seperateHousnumber)) {
+            $street[] = $address['street'];
+            $street[] = trim($address['house_number'] . ' ' . $address['house_number_ext']);
+            $street = implode("\n", $street);
+        } else {
+            if (!empty($address['address_line_1'])) {
+                $street[] = $address['address_line_1'];
+                $street[] = $address['address_line_2'];
+                $street = implode("\n", $street);
+            } else {
+                $street = $address['street'] . ' ';
+                $street .= trim($address['house_number'] . ' ' . $address['house_number_ext']);
+            }
+        }
+
+        return $street;
     }
 
     /**
@@ -398,24 +417,38 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             ->setBaseSubtotalInclTax($total);
 
         $model = Mage::getModel('shipping/shipping')->collectRates($request);
-        $defaultCarrier = explode('_', $shippingMethod);
-        $fallbackCarrier = explode('_', $shippingMethodFallback);
-        $carrierPrice = '';
-        $fallbackPrice = '';
 
-        foreach ($model->getResult()->getAllRates() as $rate) {
-            $carriercode = $rate->getCarrier();
-            $method = $rate->getMethod();
-            $price = $rate->getPrice();
-            if ($carriercode == $defaultCarrier[0]) {
-                if (empty($carrierPrice) || ($price > $carrierPrice)) {
-                    $carrier = $carriercode . '_' . $method;
+        if ($shippingMethod != 'custom') {
+            $defaultCarrier = explode('_', $shippingMethod);
+            $fallbackCarrier = explode('_', $shippingMethodFallback);
+            $carrierPrice = '';
+            $fallbackPrice = '';
+            foreach ($model->getResult()->getAllRates() as $rate) {
+                $carriercode = $rate->getCarrier();
+                $method = $rate->getMethod();
+                $price = $rate->getPrice();
+                if ($carriercode == $defaultCarrier[0]) {
+                    if (empty($carrierPrice) || ($price > $carrierPrice)) {
+                        $carrier = $carriercode . '_' . $method;
+                    }
+                }
+
+                if ($carriercode == $fallbackCarrier[0]) {
+                    if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
+                        $fallback = $carriercode . '_' . $method;
+                    }
                 }
             }
-
-            if ($carriercode == $fallbackCarrier[0]) {
-                if (empty($fallbackPrice) || ($price > $fallbackPrice)) {
-                    $fallback = $carriercode . '_' . $method;
+        } else {
+            $prioritizedMethods = array_flip(array_reverse(explode(';', $config['shipping_method_custom'])));
+            $priority = -1;
+            foreach ($model->getResult()->getAllRates() as $rate) {
+                $carriercode = $rate->getCarrier();
+                $method = $rate->getMethod();
+                $carrierMethod = $carriercode . '_' . $method;
+                if (isset($prioritizedMethods[$carrierMethod]) && $priority < $prioritizedMethods[$carrierMethod]) {
+                    $carrier = $carrierMethod;
+                    $priority = $prioritizedMethods[$carrierMethod];
                 }
             }
         }

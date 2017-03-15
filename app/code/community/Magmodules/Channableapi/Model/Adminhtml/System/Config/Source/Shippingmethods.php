@@ -42,9 +42,12 @@ class Magmodules_Channableapi_Model_Adminhtml_System_Config_Source_Shippingmetho
                     );
                 }
             }
-
-            $methods[] = array('value' => $options, 'label' => $carrierTitle);
         }
+
+        $allCarriers[] = array(
+            'value'      => 'custom',
+            'label'      => 'Use Custom Logic'
+        );
 
         return $allCarriers;
     }

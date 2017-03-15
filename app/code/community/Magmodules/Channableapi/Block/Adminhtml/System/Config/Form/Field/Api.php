@@ -83,7 +83,7 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Api
         if (empty($html)) {
             $html = Mage::helper('channable')->__('No enabled stores found');
         } else {
-            $htmlHeader = '<div class="grid"><table cellpadding="2" cellspacing="0" class="border" style="border:none;width:655px;height:75px;">';
+            $htmlHeader = '<div class="grid"><table cellpadding="2" cellspacing="0" class="border" style="width:655px;height:75px;">';
             $htmlHeader .= '<tbody><tr class="headings"><th>Store</th><th>Type</th><th></th></tr>';
             $htmlFooter = '</tbody></table></div>';
 
