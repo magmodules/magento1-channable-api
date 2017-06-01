@@ -64,12 +64,12 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
             $deliveryTimeNl = '';
             $deliveryTimeBe = '';
-            if (!empty($productData['delivery_period'])) {
-                $deliveryTimeNl = $productData['delivery_period'];
+            if (!empty($productData['delivery'])) {
+                $deliveryTimeNl = $productData['delivery'];
             }
 
-            if (!empty($productData['delivery_period_be'])) {
-                $deliveryTimeBe = $productData['delivery_period_be'];
+            if (!empty($productData['delivery_be'])) {
+                $deliveryTimeBe = $productData['delivery_be'];
             }
 
             $qty = 0;
@@ -338,14 +338,16 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         $calValue = '0.00';
 
         if (!empty($prices)) {
-            if (!empty($prices['discount_price'])) {
-                $update['price'] = trim($prices['price']);
+            $update['price'] = trim($prices['price']);
+
+            if (!empty($prices['special_price'])) {
+                $update['discount_price'] = trim($prices['special_price']);
+                $calValue = $update['special_price'];
+            }
+
+            if (!empty($prices['sales_price'])) {
                 $update['discount_price'] = trim($prices['sales_price']);
-                $calValue = $update['price'];
-            } else {
-                $update['price'] = trim($prices['price']);
-                $update['discount_price'] = '';
-                $calValue = $update['price'];
+                $calValue = $update['sales_price'];
             }
         }
 
