@@ -128,10 +128,19 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $quote->setIsActive(false)->save();
             $_order = $service->getOrder();
             if (!empty($order['channel_name'])) {
+                if (!empty($order['price']['commission'])) {
+                    $commission = $order['price']['currency'] . ' ' . $order['price']['commission'];
+                } else {
+                    $commission = 'n/a';
+                }
+
                 $orderComment = Mage::helper('channableapi')->__(
-                    '<b>%s order</b><br/>Channable id: %s<br>%s id: %s',
-                    ucfirst($order['channel_name']), $order['channable_id'], ucfirst($order['channel_name']),
-                    $order['channel_id']
+                    '<b>%s order</b><br/>Channable id: %s<br/>%s id: %s<br/>Commission: %s',
+                    ucfirst($order['channel_name']),
+                    $order['channable_id'],
+                    ucfirst($order['channel_name']),
+                    $order['channel_id'],
+                    $commission
                 );
                 $_order->addStatusHistoryComment($orderComment, false);
                 $_order->setChannableId($order['channable_id'])
@@ -158,7 +167,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $_order->save();
         }
 
-        // UNSET SESSION DATA (SHIPPING)		
+        // UNSET SESSION DATA (SHIPPING)
         Mage::getSingleton('core/session')->unsChannableEnabled();
         Mage::getSingleton('core/session')->unsChannableShipping();
 
@@ -484,8 +493,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $response['id'] = $order->getIncrementId();
         $response['status'] = $order->getStatus();
         if ($tracking = $this->_getTracking($order)) {
-            foreach ($tracking as $code) {
-                $response['fulfillment']['tracking_code'][] = $code;
+            foreach ($tracking as $track) {
+                $response['fulfillment']['tracking_code'][] = $track['tracking'];
+                $response['fulfillment']['title'][] = $track['title'];
+                $response['fulfillment']['carrier_code'][] = $track['carrier_code'];
             }
         }
 
@@ -503,7 +514,11 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $shipmentCollection = Mage::getResourceModel('sales/order_shipment_collection')->setOrderFilter($order)->load();
         foreach ($shipmentCollection as $shipment) {
             foreach ($shipment->getAllTracks() as $tracknum) {
-                $tracking[] = $tracknum->getNumber();
+                $tracking[] = array(
+                    'tracking'     => $tracknum->getNumber(),
+                    'title'        => $tracknum->getTitle(),
+                    'carrier_code' => $tracknum->getCarrierCode()
+                );
             }
         }
 
