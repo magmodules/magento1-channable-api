@@ -338,16 +338,16 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         $calValue = '0.00';
 
         if (!empty($prices)) {
-            $update['price'] = trim($prices['price']);
-
+            $update['price'] = preg_replace('/([^0-9\.,])/i', '', $prices['price']);
+            $calValue = $update['price'];
             if (!empty($prices['special_price'])) {
-                $update['discount_price'] = trim($prices['special_price']);
-                $calValue = $update['special_price'];
+                $update['discount_price'] = preg_replace('/([^0-9\.,])/i', '', $prices['special_price']);
+                $calValue = $update['discount_price'];
             }
 
             if (!empty($prices['sales_price'])) {
-                $update['discount_price'] = trim($prices['sales_price']);
-                $calValue = $update['sales_price'];
+                $update['discount_price'] = preg_replace('/([^0-9\.,])/i', '', $prices['sales_price']);
+                $calValue = $update['discount_price'];
             }
         }
 
