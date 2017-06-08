@@ -39,10 +39,9 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Api
             $token = Mage::getStoreConfig('channable/connect/token', $storeId);
 
             if ($token) {
-                $baseUrl = Mage::getUrl(
-                    'channableapi/order/index',
-                    array('_store' => $storeId, '_secure' => $isSecure)
-                );
+                $params = array('_store' => $storeId, '_secure' => $isSecure, '_nosid' => true);
+                $baseUrl = Mage::getUrl('channableapi/order/index', $params);
+                $baseUrl = strtok($baseUrl, '?');
                 $ordersApiUrl = $baseUrl . 'code/' . $token . '/store/' . $storeId;
             } else {
                 $ordersApiUrl = Mage::helper('channable')->__('Missing token');
