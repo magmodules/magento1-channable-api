@@ -50,7 +50,6 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
                     } else {
                         $data = file_get_contents('php://input');
                     }
-
                     if (!empty($data)) {
                         if ($data = $helper->validateJsonOrderData($data)) {
                             $response = Mage::getModel('channableapi/order')->importOrder($data, $storeId);
@@ -58,7 +57,7 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
                             $response = $helper->jsonResponse('No validated data');
                         }
                     } else {
-                        $response = $helper->jsonResponse('Empty Data, http -> https redirect?');
+                        $response = $helper->jsonResponse('Empty Data');
                     }
                 } else {
                     $response = $helper->jsonResponse('Unknown Token');

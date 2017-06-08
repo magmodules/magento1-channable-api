@@ -1,5 +1,4 @@
 <?xml version="1.0"?>
-
 <!--
   ~ Magmodules.eu - http://www.magmodules.eu
   ~
@@ -21,7 +20,7 @@
 <config>
     <modules>
         <Magmodules_Channableapi>
-            <version>1.1.4</version>
+            <version>1.1.5</version>
         </Magmodules_Channableapi>
     </modules>
     <global>
