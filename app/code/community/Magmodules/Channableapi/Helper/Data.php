@@ -26,22 +26,73 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return bool|mixed
      */
-    public function validateJsonOrderData($data)
+    public function validateJsonOrderData($data, $request)
     {
         $data = json_decode($data, true);
         if (json_last_error() != JSON_ERROR_NONE) {
-            return false;
+            return $this->jsonResponse('Post not valid JSON-Data: ' . json_last_error());
         }
 
-        if (empty($data['channable_id'])) {
-            return false;
+        $test = $request->getParam('test');
+        if ($test) {
+           return $this->getTestJsonData($test);
+        } else {
+            if (empty($data)) {
+                return $this->jsonResponse('No Order Data in post');
+            }
+            if (empty($data['channable_id'])) {
+                return $this->jsonResponse('Post missing channable_id');
+            }
+            if (empty($data['channel_id'])) {
+                return $this->jsonResponse('Post missing channel_id');
+            }
+            return $data;
+        }
+    }
+
+    /**
+     * @param $request
+     *
+     * @return bool
+     */
+    public function validateRequestData($request)
+    {
+        //$debug = Mage::getStoreConfig('channable_api/debug/log');
+
+        if ($ipCheck = $this->checkIpRestriction()) {
+            return $this->jsonResponse('Not Access (ip restriction)');
         }
 
-        if (empty($data['channel_id'])) {
-            return false;
+        $storeId = $request->getParam('store');
+        if (empty($storeId)) {
+            return $this->jsonResponse('Store param missing in request');
         }
 
-        return $data;
+        $enabled = Mage::getStoreConfig('channable_api/general/enabled', $storeId);
+        if (empty($enabled)) {
+            return $this->jsonResponse('Extension not enabled');
+        }
+
+        $order = Mage::getStoreConfig('channable_api/order/enabled', $storeId);
+        if (empty($order)) {
+            return $this->jsonResponse('Order import not enabled');
+        }
+
+        $token = Mage::getStoreConfig('channable/connect/token', $storeId);
+        if (empty($token)) {
+            return $this->jsonResponse('Token not set in admin');
+        }
+
+        $code = $request->getParam('code');
+        if (empty($code)) {
+            return $this->jsonResponse('Token param missing in request');
+        }
+
+        if ($code != $token) {
+            return $this->jsonResponse('Invalid token');
+        }
+
+        return false;
     }
 
     /**

@@ -27,57 +27,34 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
     public function indexAction()
     {
         $helper = Mage::helper('channableapi');
-
-        $storeId = $this->getRequest()->getParam('store');
-        if ($storeId != Mage::app()->getStore()->getStoreId()) {
-            $appEmulation = Mage::getSingleton('core/app_emulation');
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-        }
-
-        $response = $helper->checkIpRestriction();
+        $request = $this->getRequest();
+        $storeId = $request->getParam('store');
+        $response = $helper->validateRequestData($request);
 
         if (empty($response)) {
-            $enabled = Mage::getStoreConfig('channable_api/general/enabled', $storeId);
-            $order = Mage::getStoreConfig('channable_api/order/enabled', $storeId);
-            $token = Mage::getStoreConfig('channable/connect/token', $storeId);
-            $code = $this->getRequest()->getParam('code');
-            $test = $this->getRequest()->getParam('test');
-
-            if ($enabled && $order && $token && $code) {
-                if ($code == $token) {
-                    if (!empty($test)) {
-                        $data = $helper->getTestJsonData($test);
-                    } else {
-                        $data = file_get_contents('php://input');
-                    }
-                    if (!empty($data)) {
-                        if ($data = $helper->validateJsonOrderData($data)) {
-                            $response = Mage::getModel('channableapi/order')->importOrder($data, $storeId);
-                        } else {
-                            $response = $helper->jsonResponse('No validated data');
-                        }
-                    } else {
-                        $response = $helper->jsonResponse('Empty Data');
-                    }
-                } else {
-                    $response = $helper->jsonResponse('Unknown Token');
-                }
-            } else {
-                $response = $helper->jsonResponse('Not enabled');
+            $data = file_get_contents('php://input');
+            $orderData = $helper->validateJsonOrderData($data, $request);
+            if (isset($orderData['errors'])) {
+                $response = $orderData;
             }
         }
 
-        if (!empty($response)) {
-            $this->getResponse()
-                ->clearHeaders()
-                ->setHeader('Content-type', 'application/json', true)
-                ->setHeader('Cache-control', 'no-cache', true)
-                ->setBody(json_encode($response));
-        }
-
-        if ($storeId != Mage::app()->getStore()->getStoreId()) {
+        if (empty($response)) {
+            $appEmulation = Mage::getSingleton('core/app_emulation');
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+            try {
+                $response = Mage::getModel('channableapi/order')->importOrder($orderData, $storeId);
+            } catch (Exception $e) {
+                $response = $helper->jsonResponse($e->getMessage());
+            }
             $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
+
+        $this->getResponse()
+            ->clearHeaders()
+            ->setHeader('Content-type', 'application/json', true)
+            ->setHeader('Cache-control', 'no-cache', true)
+            ->setBody(json_encode($response));
     }
 
     /**
