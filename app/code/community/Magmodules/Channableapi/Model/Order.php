@@ -44,7 +44,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 return $customer;
             }
 
-            $quote->assignCustomer($customer);
+            $quote->assignCustomer($customer)->save();
             $customerId = $customer->getId();
         } else {
             if (!empty($order['customer']['middle_name'])) {
@@ -57,7 +57,8 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 ->setCustomerFirstname($order['customer']['first_name'])
                 ->setCustomerLastname($lastname)
                 ->setCustomerIsGuest(true)
-                ->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID);
+                ->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID)
+                ->save();
             $customerId = '';
         }
 

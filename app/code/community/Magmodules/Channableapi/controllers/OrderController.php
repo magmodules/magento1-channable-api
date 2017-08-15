@@ -31,17 +31,17 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
         $storeId = $request->getParam('store');
         $response = $helper->validateRequestData($request);
 
-        if (empty($response)) {
+        if (empty($response['errors'])) {
             $data = file_get_contents('php://input');
             $orderData = $helper->validateJsonOrderData($data, $request);
-            if (isset($orderData['errors'])) {
+            if (!empty($orderData['errors'])) {
                 $response = $orderData;
             }
         }
 
-        if (empty($response)) {
+        if (empty($response['errors'])) {
             $appEmulation = Mage::getSingleton('core/app_emulation');
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);        
             try {
                 $response = Mage::getModel('channableapi/order')->importOrder($orderData, $storeId);
             } catch (Exception $e) {
