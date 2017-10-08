@@ -22,12 +22,16 @@ class Magmodules_Channableapi_Model_Observer
 {
 
     /**
-     * @param $schedule
+     * @return $this
      */
-    public function shopitemApi($schedule)
+    public function shopitemApi()
     {
         $enabled = Mage::getStoreConfig('channable_api/general/enabled');
-        if ($enabled) {
+        if (!$enabled) {
+            return $this;
+        }
+
+        try {
             $stores = Mage::helper('channableapi')->getEnabledItemStores();
             foreach ($stores as $storeId) {
                 $timeStart = microtime(true);
@@ -49,6 +53,8 @@ class Magmodules_Channableapi_Model_Observer
 
                 $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
             }
+        } catch (Exception $e) {
+            Mage::log('Channable API shopitemApi:' . $e->getMessage());
         }
     }
 
@@ -57,73 +63,77 @@ class Magmodules_Channableapi_Model_Observer
      */
     public function catalog_product_save_before(Varien_Event_Observer $observer)
     {
-        $product = $observer->getProduct();
-        if ($product->hasDataChanges()) {
-            $storeId = $product->getStoreId();
-            if ($reason = $this->_compareProduct($product->getData(), $product->getOrigData())) {
-                $enabled = Mage::getStoreConfig('channable_api/general/enabled');
-                if ($enabled && ($storeId != 0)) {
-                    $enabled = Mage::getStoreConfig('channable_api/item/enabled', $storeId);
-                }
+        try {
+            $product = $observer->getProduct();
+            if ($product->hasDataChanges()) {
+                $storeId = $product->getStoreId();
+                if ($reason = $this->_compareProduct($product->getData(), $product->getOrigData())) {
+                    $enabled = Mage::getStoreConfig('channable_api/general/enabled');
+                    if ($enabled && ($storeId != 0)) {
+                        $enabled = Mage::getStoreConfig('channable_api/item/enabled', $storeId);
+                    }
 
-                if ($enabled) {
-                    if ($this->checkTableExists()) {
-                        $parentIds = array();
-                        if ($product->getTypeId() == 'simple') {
-                            $configIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild(
-                                $product->getId()
-                            );
-                            $groupedIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild(
-                                $product->getId()
-                            );
-                            $parentReason = 'Simple ID: ' . $product->getId();
-                        } else {
-                            $configIds = Mage::getModel('catalog/product_type_configurable')->getChildrenIds(
-                                $product->getId()
-                            );
-                            $groupedIds = Mage::getModel('catalog/product_type_grouped')->getChildrenIds(
-                                $product->getId()
-                            );
-                            $parentReason = 'Parent ID: ' . $product->getId();
-                        }
-
-                        if (!empty($configIds)) {
-                            if (isset($configIds[0])) {
-                                if (is_array($configIds[0])) {
-                                    $parentIds = array_merge($configIds[0], $parentIds);
-                                } else {
-                                    $parentIds[] = $configIds[0];
-                                }
-                            }
-                        }
-
-                        if (!empty($groupedIds)) {
-                            if (isset($groupedIds[0])) {
-                                if (is_array($groupedIds[0])) {
-                                    $parentIds = array_merge($groupedIds[0], $parentIds);
-                                } else {
-                                    $parentIds[] = $groupedIds[0];
-                                }
-                            }
-                        }
-
-                        $type = 'Product Edit';
-                        if (!empty($parentIds)) {
-                            foreach ($parentIds as $id) {
-                                Mage::getModel('channableapi/items')->invalidateProduct(
-                                    $id, $type, $reason,
-                                    $parentReason, $product->getStoreId()
+                    if ($enabled) {
+                        if ($this->checkTableExists()) {
+                            $parentIds = array();
+                            if ($product->getTypeId() == 'simple') {
+                                $configIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild(
+                                    $product->getId()
                                 );
+                                $groupedIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild(
+                                    $product->getId()
+                                );
+                                $parentReason = 'Simple ID: ' . $product->getId();
+                            } else {
+                                $configIds = Mage::getModel('catalog/product_type_configurable')->getChildrenIds(
+                                    $product->getId()
+                                );
+                                $groupedIds = Mage::getModel('catalog/product_type_grouped')->getChildrenIds(
+                                    $product->getId()
+                                );
+                                $parentReason = 'Parent ID: ' . $product->getId();
                             }
-                        }
 
-                        Mage::getModel('channableapi/items')->invalidateProduct(
-                            $product->getId(), $type, $reason, '',
-                            $product->getStoreId()
-                        );
+                            if (!empty($configIds)) {
+                                if (isset($configIds[0])) {
+                                    if (is_array($configIds[0])) {
+                                        $parentIds = array_merge($configIds[0], $parentIds);
+                                    } else {
+                                        $parentIds[] = $configIds[0];
+                                    }
+                                }
+                            }
+
+                            if (!empty($groupedIds)) {
+                                if (isset($groupedIds[0])) {
+                                    if (is_array($groupedIds[0])) {
+                                        $parentIds = array_merge($groupedIds[0], $parentIds);
+                                    } else {
+                                        $parentIds[] = $groupedIds[0];
+                                    }
+                                }
+                            }
+
+                            $type = 'Product Edit';
+                            if (!empty($parentIds)) {
+                                foreach ($parentIds as $id) {
+                                    Mage::getModel('channableapi/items')->invalidateProduct(
+                                        $id, $type, $reason,
+                                        $parentReason, $product->getStoreId()
+                                    );
+                                }
+                            }
+
+                            Mage::getModel('channableapi/items')->invalidateProduct(
+                                $product->getId(), $type, $reason, '',
+                                $product->getStoreId()
+                            );
+                        }
                     }
                 }
             }
+        } catch (Exception $e) {
+            Mage::log('Channable API catalog_product_save_before:' . $e->getMessage());
         }
     }
 
@@ -162,7 +172,7 @@ class Magmodules_Channableapi_Model_Observer
     public function checkTableExists()
     {
         $itemTable = Mage::getSingleton('core/resource')->getTableName('channable_items');
-        $exists = (boolean) Mage::getSingleton('core/resource')->getConnection('core_write')->showTableStatus(
+        $exists = (boolean)Mage::getSingleton('core/resource')->getConnection('core_write')->showTableStatus(
             $itemTable
         );
 
@@ -171,11 +181,17 @@ class Magmodules_Channableapi_Model_Observer
 
     /**
      * @param Varien_Event_Observer $observer
+     *
+     * @return $this
      */
     public function cataloginventory_stock_item_save_after(Varien_Event_Observer $observer)
     {
         $enabled = Mage::getStoreConfig('channable_api/general/enabled');
-        if ($enabled) {
+        if (!$enabled) {
+            return $this;
+        }
+
+        try {
             if ($this->checkTableExists()) {
                 $item = $observer->getEvent()->getItem();
                 if ($item->getStockStatusChangedAuto() || ($item->getQtyCorrection() != 0)) {
@@ -249,16 +265,24 @@ class Magmodules_Channableapi_Model_Observer
                     Mage::getModel('channableapi/items')->invalidateProduct($item->getProductId(), $type, $reason);
                 }
             }
+        } catch (Exception $e) {
+            Mage::log('Channable API cataloginventory_stock_item_save_after:' . $e->getMessage());
         }
     }
 
     /**
      * @param Varien_Event_Observer $observer
+     *
+     * @return $this
      */
     public function sales_model_service_quote_submit_before(Varien_Event_Observer $observer)
     {
         $enabled = Mage::getStoreConfig('channable_api/general/enabled');
         if ($enabled) {
+            return $this;
+        }
+
+        try {
             if ($this->checkTableExists()) {
                 $quote = $observer->getEvent()->getQuote();
                 $type = 'Sales Order';
@@ -267,16 +291,22 @@ class Magmodules_Channableapi_Model_Observer
                     Mage::getModel('channableapi/items')->invalidateProduct($item->getProductId(), $type, $reason);
                 }
             }
+        } catch (Exception $e) {
+            Mage::log('Channable API sales_model_service_quote_submit_before:' . $e->getMessage());
         }
     }
 
     /**
-     * @param $schedule
+     * Clean Old Item Entries
      */
-    public function cleanItems($schedule)
+    public function cleanItems()
     {
         $enabled = Mage::getStoreConfig('channable_api/general/enabled');
         if ($enabled) {
+            return $this;
+        }
+
+        try {
             $stores = Mage::helper('channableapi')->getEnabledItemStores();
             if ($stores && $this->checkTableExists()) {
                 $storeIds = implode(',', $stores);
@@ -291,6 +321,8 @@ class Magmodules_Channableapi_Model_Observer
                 $where = 'datediff(now(), created_time) > 5';
                 Mage::getSingleton('core/resource')->getConnection('core_read')->delete($debug, $where);
             }
+        } catch (Exception $e) {
+            Mage::log('Channable API cleanItems:' . $e->getMessage());
         }
     }
 

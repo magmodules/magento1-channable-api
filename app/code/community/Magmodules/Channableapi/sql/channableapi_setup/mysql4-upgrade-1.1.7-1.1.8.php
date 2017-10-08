@@ -20,5 +20,15 @@
 
 $installer = $this;
 $installer->startSetup();
-$installer->run("ALTER TABLE {$this->getTable('channable_items')} MODIFY `item_id` BIGINT(11)");
+
+try {
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX product_id(product_id);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX store_id(store_id);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX created_at(created_at);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX updated_at(updated_at);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX needs_update(needs_update);");
+} catch (Exception $e) {
+    Mage::log('Channable Index (install):' . $e->getMessage());
+}
+
 $installer->endSetup();

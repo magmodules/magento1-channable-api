@@ -31,9 +31,7 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note
     {
         return sprintf(
             '<tr id="row_%s"><td colspan="5" class="label" style="margin-bottom: 10px;">%s</td></tr>',
-            $element->getHtmlId(),
-            $element->getLabel()
+            $element->getHtmlId(), $element->getLabel()
         );
     }
-
 }

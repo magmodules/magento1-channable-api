@@ -18,9 +18,15 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Version extends Mage_Adminhtml_Block_System_Config_Form_Field
+class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Version
+    extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
 
+    /**
+     * @param Varien_Data_Form_Element_Abstract $element
+     *
+     * @return mixed
+     */
     public function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
     {
         return Mage::getConfig()->getNode()->modules->Magmodules_Channableapi->version;

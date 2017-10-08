@@ -21,6 +21,9 @@
 class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
 
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_Items_Grid constructor.
+     */
     public function __construct()
     {
         parent::__construct();

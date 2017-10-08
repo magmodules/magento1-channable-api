@@ -47,6 +47,7 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
             } catch (Exception $e) {
                 $response = $helper->jsonResponse($e->getMessage());
             }
+
             $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
 

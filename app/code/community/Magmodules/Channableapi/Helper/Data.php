@@ -37,15 +37,19 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
             if (json_last_error() != JSON_ERROR_NONE) {
                 return $this->jsonResponse('Post not valid JSON-Data: ' . json_last_error_msg());
             }
+
             if (empty($data)) {
                 return $this->jsonResponse('No Order Data in post');
             }
+
             if (empty($data['channable_id'])) {
                 return $this->jsonResponse('Post missing channable_id');
             }
+
             if (empty($data['channel_id'])) {
                 return $this->jsonResponse('Post missing channel_id');
             }
+
             return $data;
         }
     }
