@@ -14,7 +14,7 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -22,30 +22,51 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
 {
 
     /**
+     * @var Magmodules_Channableapi_Helper_Data
+     */
+    public $helper;
+
+    /**
+     * @var Magmodules_Channableapi_Model_Order
+     */
+    public $orderModel;
+
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook constructor.
+     */
+    public function _construct()
+    {
+        $this->helper = Mage::helper('channableapi');
+        $this->orderModel = Mage::getModel('channableapi/order');
+        parent::_construct();
+    }
+
+    /**
      * Index Action
      */
     public function indexAction()
     {
-        $helper = Mage::helper('channableapi');
+        $orderData = null;
         $request = $this->getRequest();
         $storeId = $request->getParam('store');
-        $response = $helper->validateRequestData($request);
+        $response = $this->helper->validateRequestData($request, 'order');
 
         if (empty($response['errors'])) {
             $data = file_get_contents('php://input');
-            $orderData = $helper->validateJsonOrderData($data, $request);
+            $orderData = $this->helper->validateJsonOrderData($data, $request);
             if (!empty($orderData['errors'])) {
                 $response = $orderData;
             }
         }
 
         if (empty($response['errors'])) {
+            /** @var Mage_Core_Model_App_Emulation $appEmulation */
             $appEmulation = Mage::getSingleton('core/app_emulation');
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);        
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
             try {
-                $response = Mage::getModel('channableapi/order')->importOrder($orderData, $storeId);
+                $response = $this->orderModel->importOrder($orderData, $storeId);
             } catch (Exception $e) {
-                $response = $helper->jsonResponse($e->getMessage());
+                $response = $this->helper->jsonResponse($e->getMessage());
             }
 
             $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
@@ -63,22 +84,22 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
      */
     public function getAction()
     {
-        $helper = Mage::helper('channableapi');
-        $enabled = Mage::getStoreConfig('channable_api/general/enabled');
-        $token = Mage::getStoreConfig('channable/connect/token');
+        $enabled = $this->helper->getEnabled();
+        $token = $this->helper->getToken();
         $code = $this->getRequest()->getParam('code');
+
         if ($enabled && $token && $code) {
             if ($code == $token) {
                 if ($id = $this->getRequest()->getParam('id')) {
-                    $response = Mage::getModel('channableapi/order')->getOrderById($id);
+                    $response = $this->orderModel->getOrderById($id);
                 } else {
-                    $response = $helper->jsonResponse('Missing ID');
+                    $response = $this->helper->jsonResponse('Missing ID');
                 }
             } else {
-                $response = $helper->jsonResponse('Unknown Token');
+                $response = $this->helper->jsonResponse('Unknown Token');
             }
         } else {
-            $response = $helper->jsonResponse('Extension not enabled!');
+            $response = $this->helper->jsonResponse('Extension not enabled!');
         }
 
         if (!empty($response)) {
@@ -89,4 +110,38 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
                 ->setBody(json_encode($response));
         }
     }
+
+    /**
+     * Webhook Action
+     */
+    public function webhookAction()
+    {
+        $webhookData = null;
+        $request = $this->getRequest();
+        $storeId = $request->getParam('store');
+        $response = $this->helper->validateRequestData($request, 'item');
+
+        if (empty($response['errors'])) {
+            $data = file_get_contents('php://input');
+            $webhookData = $this->helper->validateJsonWebhookData($data);
+            if (!empty($webhookData['errors'])) {
+                $response = $webhookData;
+            }
+        }
+
+        if (empty($response['errors'])) {
+            try {
+                $response = $this->helper->setWebhook($webhookData, $storeId);
+            } catch (Exception $e) {
+                $response = $this->helper->jsonResponse($e->getMessage());
+            }
+        }
+
+        $this->getResponse()
+            ->clearHeaders()
+            ->setHeader('Content-type', 'application/json', true)
+            ->setHeader('Cache-control', 'no-cache', true)
+            ->setBody(json_encode($response));
+    }
+
 }

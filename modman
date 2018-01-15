@@ -3,3 +3,6 @@ app/etc/modules/Magmodules_Channableapi.xml            app/etc/modules/Magmodule
 app/locale/en_US/Magmodules_Channableapi.csv            app/locale/en_US/Magmodules_Channableapi.csv
 app/locale/nl_NL/Magmodules_Channableapi.csv            app/locale/nl_NL/Magmodules_Channableapi.csv
 app/design/adminhtml/default/default/layout/magmodules_channableapi.xml            app/design/adminhtml/default/default/layout/magmodules_channableapi.xml
+app/design/adminhtml/default/default/template/magmodules/channableapi/system/config/test_button.phtml           app/design/adminhtml/default/default/template/magmodules/channableapi/system/config/test_button.phtml
+app/design/adminhtml/default/default/template/magmodules/channableapi/system/config/test_result.phtml           app/design/adminhtml/default/default/template/magmodules/channableapi/system/config/test_result.phtml
+skin/adminhtml/default/default/magmodules/channableapi/style.css           skin/adminhtml/default/default/magmodules/channableapi/style.css

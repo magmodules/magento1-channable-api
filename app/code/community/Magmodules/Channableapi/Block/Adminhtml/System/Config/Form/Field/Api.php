@@ -14,13 +14,27 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Api
     extends Mage_Adminhtml_Block_Abstract implements Varien_Data_Form_Element_Renderer_Interface
 {
+
+    /**
+     * @var Magmodules_Channableapi_Helper_Data
+     */
+    public $helper;
+
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        $this->helper = Mage::helper('channableapi');
+    }
 
     /**
      * @param Varien_Data_Form_Element_Abstract $element
@@ -33,36 +47,23 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Api
         $stores = Mage::app()->getStores();
 
         foreach ($stores as $store) {
-            $storeId = Mage::app()->getStore($store)->getId();
-            $storeName = Mage::app()->getStore($storeId)->getName();
-            $isSecure = Mage::getStoreConfig('web/secure/use_in_frontend', $storeId);
-            $token = Mage::getStoreConfig('channable/connect/token', $storeId);
+            $storeId = $store->getId();
+            $storeName = $store->getName();
+            $ordersApiUrl = $this->helper->getOrderWebhook($storeId, true);
 
-            if ($token) {
-                $params = array('_store' => $storeId, '_secure' => $isSecure, '_nosid' => true);
-                $baseUrl = Mage::getUrl('channableapi/order/index', $params);
-                $baseUrl = strtok($baseUrl, '?');
-                $ordersApiUrl = $baseUrl . 'code/' . $token . '/store/' . $storeId;
-            } else {
-                $ordersApiUrl = Mage::helper('channable')->__('Missing token');
-            }
-
-            if (Mage::getStoreConfig('channable_api/order/enabled', $storeId)) {
+            if ($this->helper->getOrderEnabled($storeId)) {
                 $ordersApi = '<img src="' . $this->getSkinUrl('images/rule_component_apply.gif') . '">';
             } else {
                 $ordersApi = '<img src="' . $this->getSkinUrl('images/rule_component_remove.gif') . '">';
             }
 
-            if (Mage::getStoreConfig('channable_api/item/enabled', $storeId)) {
+            if ($this->helper->getItemEnabled($storeId)) {
                 $itemApi = '<img src="' . $this->getSkinUrl('images/rule_component_apply.gif') . '">';
             } else {
                 $itemApi = '<img src="' . $this->getSkinUrl('images/rule_component_remove.gif') . '">';
             }
 
-            $itemApiResult = Mage::helper('channableapi')->getUncachedConfigValue(
-                'channable_api/item/result',
-                $storeId
-            );
+            $itemApiResult = $this->helper->getItemResults($storeId);
 
             $html .= '<tr>';
             $html .= '  <td colspan="3"><strong>' . $storeName . '</strong></td>';

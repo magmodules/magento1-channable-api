@@ -14,7 +14,7 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -45,8 +45,8 @@ class Magmodules_Channableapi_Model_Adminhtml_System_Config_Source_Shippingmetho
         }
 
         $allCarriers[] = array(
-            'value'      => 'custom',
-            'label'      => 'Use Custom Logic'
+            'value' => 'custom',
+            'label' => 'Use Custom Logic'
         );
 
         return $allCarriers;

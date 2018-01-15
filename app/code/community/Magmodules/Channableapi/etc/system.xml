@@ -14,7 +14,7 @@
   ~ @category      Magmodules
   ~ @package       Magmodules_Channableapi
   ~ @author        Magmodules <info@magmodules.eu>
-  ~ @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+  ~ @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
   ~ @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
   -->
 <config>
@@ -50,24 +50,24 @@
                     <show_in_store>0</show_in_store>
                     <expanded>1</expanded>
                     <fields>
-                        <enabled translate="label">
-                            <label>Enabled</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>1</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </enabled>
                         <version translate="label">
                             <label>Extension Version</label>
                             <frontend_type>text</frontend_type>
                             <frontend_model>channableapi/adminhtml_system_config_form_field_version</frontend_model>
-                            <sort_order>2</sort_order>
+                            <sort_order>1</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                         </version>
+                        <enabled translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </enabled>
                     </fields>
                 </general>
                 <order translate="label" module="channableapi">
@@ -174,15 +174,47 @@
                             <show_in_store>1</show_in_store>
                             <comment><![CDATA[If you use the second 'street' field as a separate house-number field, enable this option.]]></comment>
                         </seperate_housenumber>
-                        <invoice_order translate="label">
-                            <label>Create invoice for order</label>
+                        <order_email translate="label">
+                            <label>Send order email to customer</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>42</sort_order>
                             <show_in_default>0</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
+                            <comment><![CDATA[Activate this option if you also want to send the order email from your Magento store after import.]]></comment>
+                        </order_email>
+                        <invoice_order translate="label">
+                            <label>Create invoice for order</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>43</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
                         </invoice_order>
+                        <channel_orderid translate="label">
+                            <label>Use channel Order ID</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>44</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Choose if you want to use the channel Order ID as Magento Increment ID.</comment>
+                        </channel_orderid>
+                        <orderid_prefix translate="label">
+                            <label>Order ID Prefix</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>45</sort_order>
+                            <show_in_default>0</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment><![CDATA[<strong>NOTE:</strong> As the Order Increment ID is a unique value, we strongly recommend to add a prefix to the Channable Order ID to make sure the order number is unique. Not setting a prefix can cause issues on creating normal orders. Suggestion; “M-“.]]></comment>
+                            <depends>
+                                <channel_orderid>1</channel_orderid>
+                            </depends>
+                        </orderid_prefix>
                     </fields>
                 </order>
                 <item translate="label" module="channableapi">
@@ -206,13 +238,11 @@
                         <webhook translate="label">
                             <label>Webhook</label>
                             <frontend_type>text</frontend_type>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_webhook</frontend_model>
                             <sort_order>2</sort_order>
                             <show_in_default>0</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
-                            <depends>
-                                <enabled>1</enabled>
-                            </depends>
                         </webhook>
                     </fields>
                 </item>
@@ -273,10 +303,57 @@
                         </apiurls>
                     </fields>
                 </available>
+                <advanced>
+                    <label>Advanced</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>7</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <lvb translate="label">
+                            <label>Accept LVB Orders</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Only enable this after contact with Channable.</comment>
+                        </lvb>
+                        <lvb_stock translate="label">
+                            <label>Disregard stock for LVB orders</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <lvb>1</lvb>
+                            </depends>
+                            <comment>This option will add the required stock just before importing the order to prevent stock changes.</comment>
+                        </lvb_stock>
+                        <lvb_ship translate="label">
+                            <label>Auto Ship LVB orders</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <lvb>1</lvb>
+                            </depends>
+                            <comment>This option will ship the LVB orders, for complete status.</comment>
+                        </lvb_ship>
+                    </fields>
+                </advanced>
                 <debug>
                     <label>Debug</label>
                     <frontend_type>text</frontend_type>
-                    <sort_order>6</sort_order>
+                    <sort_order>7</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>0</show_in_website>
                     <show_in_store>0</show_in_store>
@@ -304,6 +381,35 @@
                         </log>
                     </fields>
                 </debug>
+                <selftest>
+                    <label>Selftest</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>8</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <test_button translate="label">
+                            <label>Perform a self test to check your setup on errors.</label>
+                            <frontend_type>button</frontend_type>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_button</frontend_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </test_button>
+                        <test_result translate="label">
+                            <label></label>
+                            <frontend_type>button</frontend_type>
+                            <frontend_model>channableapi/adminhtml_system_config_form_field_result</frontend_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </test_result>
+                    </fields>
+                </selftest>
             </groups>
         </channable_api>
         <carriers>

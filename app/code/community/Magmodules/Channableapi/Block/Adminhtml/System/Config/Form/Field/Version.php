@@ -14,7 +14,7 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -23,14 +23,27 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Version
 {
 
     /**
+     * @var Magmodules_Channableapi_Helper_Data
+     */
+    public $helper;
+
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        $this->helper = Mage::helper('channableapi');
+    }
+
+    /**
      * @param Varien_Data_Form_Element_Abstract $element
      *
      * @return mixed
      */
     public function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
     {
-        return Mage::getConfig()->getNode()->modules->Magmodules_Channableapi->version;
-
+        return $this->helper->getModuleVersion();
     }
 
 }

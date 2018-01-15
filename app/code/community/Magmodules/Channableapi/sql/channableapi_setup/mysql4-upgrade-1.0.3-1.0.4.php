@@ -14,11 +14,12 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$installer = new Mage_Catalog_Model_Resource_Eav_Mysql4_Setup('core_setup');
+/** @var $installer Mage_Catalog_Model_Resource_Setup */
+$installer = $this;
 $installer->startSetup();
 $installer->run(
     "

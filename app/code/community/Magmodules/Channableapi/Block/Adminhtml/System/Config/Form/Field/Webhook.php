@@ -18,23 +18,39 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note
-    extends Mage_Adminhtml_Block_Abstract implements Varien_Data_Form_Element_Renderer_Interface
+class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook
+    extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
+
+    /**
+     * Mollie Helper.
+     *
+     * @var Magmodules_Channableapi_Helper_Data
+     */
+    public $helper;
+
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        $this->helper = Mage::helper('channableapi');
+    }
 
     /**
      * @param Varien_Data_Form_Element_Abstract $element
      *
-     * @return string
+     * @return mixed
      */
-    public function render(Varien_Data_Form_Element_Abstract $element)
+    public function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
     {
-        return sprintf(
-            '<tr id="row_%s">
-              <td colspan="5" class="label" style="margin-bottom: 10px;">%s</td>
-             </tr>',
-            $element->getHtmlId(),
-            $element->getLabel()
-        );
+        $storeId = 0;
+        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getStore())) {
+            $storeId = Mage::getModel('core/store')->load($code)->getId();
+        }
+
+        return $this->helper->getItemUpdateWebhook($storeId, true);
     }
+
 }

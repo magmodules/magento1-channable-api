@@ -21,18 +21,14 @@
 /** @var $installer Mage_Catalog_Model_Resource_Setup */
 $installer = $this;
 $installer->startSetup();
-$installer->run(
-    "
-	CREATE TABLE IF NOT EXISTS {$this->getTable('channable_debug')} (
-	`id` bigint(20) NOT NULL AUTO_INCREMENT, 
-	`ids` varchar(255) NOT NULL,
-	`type` varchar(255) NOT NULL,
-	`status` varchar(255) NOT NULL,
-	`action` varchar(255) NOT NULL,
-	`message` text NOT NULL,
-	`created_time` datetime NOT NULL,
-	PRIMARY KEY (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-"
-);
-$installer->endSetup(); 
+
+try {
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} CHANGE COLUMN `product_title` `title` varchar(255);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} CHANGE COLUMN `qty` `stock` decimal(12,4);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `parent_id` int(11) NOT NULL AFTER `product_id`;");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `gtin` varchar(255) DEFAULT NULL AFTER `parent_id`;");
+} catch (Exception $e) {
+    Mage::log($e->getMessage());
+}
+
+$installer->endSetup();

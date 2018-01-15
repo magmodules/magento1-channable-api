@@ -14,12 +14,15 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 {
+
+    public $weight = 0;
+    public $total = 0;
 
     /**
      * @param $order
@@ -29,17 +32,19 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      */
     public function importOrder($order, $storeId)
     {
-        $config = $this->_getConfig($storeId);
+        $config = $this->getConfig($storeId);
         $store = Mage::getModel('core/store')->load($storeId);
+        $lvb = ($order['order_status'] == 'shipped') ? true : false;
 
-        if ($errors = $this->_checkProducts($order['products'])) {
-            return $this->_jsonRepsonse($errors, '', $order['channable_id']);
+        if ($errors = $this->checkProducts($order['products'], $lvb)) {
+            return $this->jsonRepsonse($errors, '', $order['channable_id']);
         }
 
+        /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getModel('sales/quote')->setStoreId($config['store_id']);
 
         if ($config['import_customers']) {
-            $customer = $this->_importCustomer($order, $config);
+            $customer = $this->importCustomer($order, $config);
             if (!empty($customer['errors'])) {
                 return $customer;
             }
@@ -62,51 +67,26 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $customerId = '';
         }
 
-        $billingAddress = $this->_setQuoteAddress('billing', $order, $config, $customerId);
+        $billingAddress = $this->setQuoteAddress('billing', $order, $config, $customerId);
         if (!empty($billingAddress['errors'])) {
             return $billingAddress;
         } else {
             $quote->getBillingAddress()->addData($billingAddress);
         }
 
-        $shippingAddress = $this->_setQuoteAddress('shipping', $order, $config, $customerId);
+        $shippingAddress = $this->setQuoteAddress('shipping', $order, $config, $customerId);
         if (!empty($shippingAddress['errors'])) {
             return $shippingAddress;
         } else {
             $quote->getShippingAddress()->addData($shippingAddress);
         }
 
-        $taxCalculation = Mage::getSingleton('tax/calculation');
-        $total = 0;
-        $weight = 0;
-
-        foreach ($order['products'] as $product) {
-            $_product = Mage::getModel('catalog/product')->load($product['id']);
-            $price = $product['price'];
-
-            // PRICES WITHOUT VAT
-            if (empty($config['price_includes_tax'])) {
-                $request = $taxCalculation
-                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
-                $taxclassid = $_product->getData('tax_class_id');
-                $percent = $taxCalculation->getRate($request->setProductClassId($taxclassid));
-                $price = ($product['price'] / (100 + $percent) * 100);
-            }
-
-            $total = ($total + $price);
-            $weight = ($weight + ($_product->getWeight() * $product['quantity']));
-            $quote->addProduct(
-                $_product,
-                new Varien_Object(array('qty' => $product['quantity']))
-            )->setOriginalCustomPrice($price);
-        }
+        $this->addProductsToQuote($quote, $order, $config, $store, $lvb);
 
         try {
             if (empty($config['shipping_includes_tax'])) {
-                $request = $taxCalculation
-                    ->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), null, $store);
-                $taxRateId = Mage::getStoreConfig('tax/classes/shipping_tax_class', $storeId);
-                $percent = $taxCalculation->getRate($request->setProductClassId($taxRateId));
+                $taxId = Mage::getStoreConfig('tax/classes/shipping_tax_class', $storeId);
+                $percent = $this->getTax($quote->getShippingAddress(), $quote->getBillingAddress(), $store, $taxId);
                 $shippingPriceCal = ($order['price']['shipping'] / (100 + $percent) * 100);
             } else {
                 $shippingPriceCal = $order['price']['shipping'];
@@ -116,7 +96,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             Mage::getSingleton('core/session')->setChannableEnabled(1);
             Mage::getSingleton('core/session')->setChannableShipping($shippingPriceCal);
 
-            $shippingMethod = $this->_getShippingMethod($quote, $shippingAddress, $total, $weight, $config);
+            $shippingMethod = $this->getShippingMethod($quote, $shippingAddress, $config);
             $quote->getShippingAddress()
                 ->setShippingMethod($shippingMethod)
                 ->setPaymentMethod($config['payment_method'])
@@ -124,10 +104,22 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                 ->collectTotals();
             $quote->getPayment()->importData(array('method' => $config['payment_method']));
             $quote->save();
+
+            /** @var Mage_Sales_Model_Service_Quote $service */
             $service = Mage::getModel('sales/service_quote', $quote);
             $service->submitAll();
             $quote->setIsActive(false)->save();
-            $_order = $service->getOrder();
+
+            /** @var Mage_Sales_Model_Order $_order */
+            if (!empty($config['channel_orderid'])) {
+                $newIncrement = $this->getUniqueIncrementId($order['channel_id'], $storeId);
+                $_order = $service->getOrder()
+                    ->setIncrementId($newIncrement)
+                    ->save();
+            } else {
+                $_order = $service->getOrder();
+            }
+
             if (!empty($order['channel_name'])) {
                 if (!empty($order['price']['commission'])) {
                     $commission = $order['price']['currency'] . ' ' . $order['price']['commission'];
@@ -143,6 +135,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                     $order['channel_id'],
                     $commission
                 );
+
                 $_order->addStatusHistoryComment($orderComment, false);
                 $_order->setChannableId($order['channable_id'])
                     ->setChannelId($order['channel_id'])
@@ -156,23 +149,54 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             unset($customer);
             unset($service);
         } catch (Exception $e) {
-            return $this->_jsonRepsonse($e->getMessage(), '', $order['channable_id']);
+            return $this->jsonRepsonse($e->getMessage(), '', $order['channable_id']);
         }
 
         if (!empty($config['invoice_order'])) {
-            $invoice = $_order->prepareInvoice();
-            $invoice->register();
+            try {
+                $invoice = $_order->prepareInvoice();
+                $invoice->register();
 
-            Mage::getModel('core/resource_transaction')->addObject($invoice)->addObject($invoice->getOrder())->save();
-            $_order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
-            $_order->save();
+                Mage::getModel('core/resource_transaction')->addObject($invoice)->addObject($invoice->getOrder())->save();
+                $_order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+                $_order->save();
+            } catch (Exception $e) {
+                $this->addToLog('importOrder', $e->getMessage(), 2);
+            }
+        }
+
+        if ($lvb && !empty($config['lvb_ship'])) {
+            try {
+                $shipment = $_order->prepareShipment();
+                $shipment->register();
+
+                $_order->setIsInProcess(true);
+                $_order->addStatusHistoryComment('LVB Order, Automaticly Shipped', false);
+
+                Mage::getModel('core/resource_transaction')
+                    ->addObject($shipment)
+                    ->addObject($shipment->getOrder())
+                    ->save();
+            } catch (Exception $e) {
+                $this->addToLog('importOrder', $e->getMessage(), 2);
+            }
+        }
+
+        if (!empty($config['order_email'])) {
+            try {
+                $_order->getSendConfirmation(null);
+                $_order->sendNewOrderEmail();
+                $_order->save();
+            } catch (Exception $e) {
+                $this->addToLog('importOrder', $e->getMessage(), 2);
+            }
         }
 
         // UNSET SESSION DATA (SHIPPING)
         Mage::getSingleton('core/session')->unsChannableEnabled();
         Mage::getSingleton('core/session')->unsChannableShipping();
 
-        return $this->_jsonRepsonse('', $_order->getIncrementId());
+        return $this->jsonRepsonse('', $_order->getIncrementId());
     }
 
     /**
@@ -180,7 +204,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return array
      */
-    protected function _getConfig($storeId)
+    public function getConfig($storeId)
     {
         $config = array();
         $config['store_id'] = $storeId;
@@ -197,43 +221,50 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $config['price_includes_tax'] = Mage::getStoreConfig('tax/calculation/price_includes_tax', $storeId);
         $config['seperate_housenumber'] = Mage::getStoreConfig('channable_api/order/seperate_housenumber', $storeId);
         $config['invoice_order'] = Mage::getStoreConfig('channable_api/order/invoice_order', $storeId);
+        $config['order_email'] = Mage::getStoreConfig('channable_api/order/order_email', $storeId);
         $config['customers_group'] = Mage::getStoreConfig('channable_api/order/customers_group', $storeId);
-
+        $config['channel_orderid'] = Mage::getStoreConfig('channable_api/order/channel_orderid', $storeId);
+        $config['lvb_stock'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
+        $config['lvb_ship'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
         return $config;
     }
 
     /**
      * @param $products
+     * @param $lvb
      *
      * @return array|bool
      */
-    protected function _checkProducts($products)
+    public function checkProducts($products, $lvb)
     {
         $error = array();
         foreach ($products as $product) {
+            /** @var Mage_Catalog_Model_Product $_product */
             $_product = Mage::getModel('catalog/product')->load($product['id']);
             if (!$_product->getId()) {
                 if (!empty($product['title']) && !empty($product['id'])) {
                     $error[] = Mage::helper('channableapi')->__(
                         'Product "%s" not found in catalog (ID: %s)',
-                        $product['title'], $product['id']
+                        $product['title'],
+                        $product['id']
                     );
                 } else {
                     $error[] = Mage::helper('channableapi')->__('Product not found in catalog');
                 }
             } else {
-                if (!$_product->isSalable()) {
+                if (!$_product->isSalable() && !$lvb) {
                     $error[] = Mage::helper('channableapi')->__(
                         'Product "%s" not available in requested quantity',
-                        $product['title'], $product['id']
+                        $product['title'],
+                        $product['id']
                     );
                 }
-
                 $options = $_product->getRequiredOptions();
                 if (!empty($options)) {
                     $error[] = Mage::helper('channableapi')->__(
                         'Product "%s" has required options, this is not supported (ID: %s)',
-                        $product['title'], $product['id']
+                        $product['title'],
+                        $product['id']
                     );
                 }
             }
@@ -253,7 +284,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return mixed
      */
-    protected function _jsonRepsonse($errors = '', $orderId = '', $channableId = '')
+    public function jsonRepsonse($errors = '', $orderId = '', $channableId = '')
     {
         return Mage::helper('channableapi')->jsonResponse($errors, $orderId, $channableId);
     }
@@ -264,7 +295,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return mixed
      */
-    protected function _importCustomer($order, $config)
+    public function importCustomer($order, $config)
     {
         $store = Mage::getModel('core/store')->load($config['store_id']);
         $websiteId = Mage::getModel('core/store')->load($config['store_id'])->getWebsiteId();
@@ -288,7 +319,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
                 return $customer;
             } catch (Exception $e) {
-                return $this->_jsonRepsonse($e->getMessage(), '', $order['channable_id']);
+                return $this->jsonRepsonse($e->getMessage(), '', $order['channable_id']);
             }
         } else {
             return $customer;
@@ -303,7 +334,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return array|mixed
      */
-    protected function _setQuoteAddress($type, $order, $config, $customerId = '')
+    public function setQuoteAddress($type, $order, $config, $customerId = '')
     {
         if ($type == 'billing') {
             $address = $order['billing'];
@@ -320,7 +351,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $telephone = $order['customer']['mobile'];
         }
 
-        $street = $this->_getStreet($address, $config['seperate_housenumber']);
+        $street = $this->getStreet($address, $config['seperate_housenumber']);
 
         $state = '';
         if (!empty($address['state'])) {
@@ -364,14 +395,20 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
                         ->save();
                 }
             } catch (Exception $e) {
-                return $this->_jsonRepsonse($e->getMessage(), '', $order['channable_id']);
+                return $this->jsonRepsonse($e->getMessage(), '', $order['channable_id']);
             }
         }
 
         return $addressData;
     }
 
-    protected function _getStreet($address, $seperateHousnumber)
+    /**
+     * @param $address
+     * @param $seperateHousnumber
+     *
+     * @return array|string
+     */
+    public function getStreet($address, $seperateHousnumber)
     {
         $street = array();
         if (!empty($seperateHousnumber)) {
@@ -393,15 +430,64 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
     }
 
     /**
-     * @param $quote
+     * @param Mage_Sales_Model_Quote    $quote
+     * @param                           $order
+     * @param                           $config
+     * @param                           $store
+     * @param bool                      $lvb
+     */
+    public function addProductsToQuote($quote, $order, $config, $store, $lvb = false)
+    {
+        foreach ($order['products'] as $product) {
+            /** @var Mage_Catalog_Model_Product $_product */
+            $_product = Mage::getModel('catalog/product')->load($product['id']);
+
+            if (empty($config['price_includes_tax'])) {
+                $taxId = $_product->getData('tax_class_id');
+                $percent = $this->getTax($quote->getShippingAddress(), $quote->getBillingAddress(), $store,
+                    $taxId);
+                $price = ($product['price'] / (100 + $percent) * 100);
+            } else {
+                $price = $product['price'];
+            }
+
+            $this->total += $price;
+            $this->weight += ($_product->getWeight() * $product['quantity']);
+
+            if ($lvb && $config['lvb_stock']) {
+                $_product->getStockItem()->setUseConfigManageStock(false);
+                $_product->getStockItem()->setManageStock(false);
+            }
+
+            $buyRequest = new Varien_Object(array('qty' => $product['quantity']));
+            $quote->addProduct($_product, $buyRequest)->setOriginalCustomPrice($price);
+        }
+    }
+
+    /**
      * @param $shippingAddress
-     * @param $total
-     * @param $weight
-     * @param $config
+     * @param $billingAddress
+     * @param $store
+     * @param $taxId
+     *
+     * @return float
+     */
+    public function getTax($shippingAddress, $billingAddress, $store, $taxId)
+    {
+        /** @var Mage_Tax_Model_Calculation $taxCalculation */
+        $taxCalculation = Mage::getSingleton('tax/calculation');
+        $request = $taxCalculation->getRateRequest($shippingAddress, $billingAddress, null, $store);
+        return $taxCalculation->getRate($request->setProductClassId($taxId));
+    }
+
+    /**
+     * @param Mage_Sales_Model_Quote $quote
+     * @param                        $shippingAddress
+     * @param                        $config
      *
      * @return string
      */
-    protected function _getShippingMethod($quote, $shippingAddress, $total, $weight, $config)
+    public function getShippingMethod($quote, $shippingAddress, $config)
     {
         $store = Mage::getModel('core/store')->load($config['store_id']);
         $shippingMethod = $config['shipping_method'];
@@ -410,22 +496,24 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $shippingMethodFallback = 'flatrate_flatrate';
         }
 
+        /** @var Mage_Shipping_Model_Rate_Request $request */
         $request = Mage::getModel('shipping/rate_request')
             ->setAllItems($quote->getAllItems())
             ->setDestCountryId($shippingAddress['country_id'])
             ->setDestPostcode($shippingAddress['postcode'])
-            ->setPackageValue($total)
-            ->setPackageValueWithDiscount($total)
-            ->setPackageWeight($weight)
+            ->setPackageValue($this->total)
+            ->setPackageValueWithDiscount($this->total)
+            ->setPackageWeight($this->weight)
             ->setPackageQty(1)
-            ->setPackagePhysicalValue($total)
+            ->setPackagePhysicalValue($this->total)
             ->setFreeMethodWeight(0)
             ->setStoreId($store->getId())
             ->setWebsiteId($store->getWebsiteId())
             ->setFreeShipping(0)
             ->setBaseCurrency($store->getBaseCurrency())
-            ->setBaseSubtotalInclTax($total);
+            ->setBaseSubtotalInclTax($this->total);
 
+        /** @var Mage_Shipping_Model_Shipping $model */
         $model = Mage::getModel('shipping/shipping')->collectRates($request);
 
         if ($shippingMethod != 'custom') {
@@ -475,25 +563,69 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
     }
 
     /**
+     * @param $channelId
+     * @param $storeId
+     *
+     * @return mixed|string
+     */
+    public function getUniqueIncrementId($channelId, $storeId)
+    {
+        $prefix = Mage::getStoreConfig('channable_api/order/orderid_prefix', $storeId);
+        $newIncrementId = $prefix . preg_replace("/[^a-zA-Z0-9]+/", "", $channelId);
+        $orderCheck = Mage::getModel('sales/order')->loadByIncrementId($newIncrementId);
+        if ($orderCheck->getId()) {
+            /** @var Mage_Sales_Model_Order $lastOrder */
+            $lastOrder = Mage::getModel('sales/order')->getCollection()
+                ->addFieldToFilter('increment_id', array('like' => $newIncrementId . '-%'))
+                ->addAttributeToSort('entity_id', 'ASC')
+                ->getLastItem();
+            if ($lastOrder->getIncrementId()) {
+                $lastIncrement = explode('-', $lastOrder->getIncrementId());
+                $newEnd = '-' . (end($lastIncrement) + 1);
+                array_pop($lastIncrement);
+                $newIncrementId = implode('-', $lastIncrement) . $newEnd;
+            } else {
+                $newIncrementId .= '-1';
+            }
+        }
+
+        return $newIncrementId;
+    }
+
+    /**
+     * @param      $type
+     * @param      $msg
+     * @param int  $level
+     * @param bool $force
+     *
+     * @return mixed
+     */
+    public function addToLog($type, $msg, $level = 6, $force = false)
+    {
+        return Mage::helper('channableapi')->addToLog($type, $msg, $level, $force);
+    }
+
+    /**
      * @param $id
      *
      * @return array|mixed
      */
     public function getOrderById($id)
     {
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($id);
         if (!$order->getId()) {
-            return $this->_jsonRepsonse($errors = 'No order found');
+            return $this->jsonRepsonse($errors = 'No order found');
         }
 
         if ($order->getChannableId() < 1) {
-            return $this->_jsonRepsonse($errors = 'Not a Channable order');
+            return $this->jsonRepsonse($errors = 'Not a Channable order');
         }
 
         $response = array();
         $response['id'] = $order->getIncrementId();
         $response['status'] = $order->getStatus();
-        if ($tracking = $this->_getTracking($order)) {
+        if ($tracking = $this->getTracking($order)) {
             foreach ($tracking as $track) {
                 $response['fulfillment']['tracking_code'][] = $track['tracking'];
                 $response['fulfillment']['title'][] = $track['title'];
@@ -509,9 +641,10 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return array|bool
      */
-    protected function _getTracking($order)
+    public function getTracking($order)
     {
         $tracking = array();
+        /** @var Mage_Sales_Model_Resource_Order_Shipment_Collection $shipmentCollection */
         $shipmentCollection = Mage::getResourceModel('sales/order_shipment_collection')->setOrderFilter($order)->load();
         foreach ($shipmentCollection as $shipment) {
             foreach ($shipment->getAllTracks() as $tracknum) {
@@ -529,5 +662,4 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             return false;
         }
     }
-
 }

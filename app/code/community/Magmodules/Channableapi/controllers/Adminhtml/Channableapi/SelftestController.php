@@ -18,21 +18,31 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/** @var $installer Mage_Catalog_Model_Resource_Setup */
-$installer = $this;
-$installer->startSetup();
-$installer->run(
-    "
-	CREATE TABLE IF NOT EXISTS {$this->getTable('channable_debug')} (
-	`id` bigint(20) NOT NULL AUTO_INCREMENT, 
-	`ids` varchar(255) NOT NULL,
-	`type` varchar(255) NOT NULL,
-	`status` varchar(255) NOT NULL,
-	`action` varchar(255) NOT NULL,
-	`message` text NOT NULL,
-	`created_time` datetime NOT NULL,
-	PRIMARY KEY (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-"
-);
-$installer->endSetup(); 
+class Magmodules_Channableapi_Adminhtml_Channableapi_SelftestController extends Mage_Adminhtml_Controller_Action
+{
+
+    /**
+     * @var Magmodules_Channableapi_Helper_Selftest
+     */
+    public $helper;
+
+    /**
+     * Construct.
+     */
+    public function _construct()
+    {
+        $this->helper = Mage::helper('channableapi/selftest');
+        parent::_construct();
+    }
+
+    /**
+     *
+     */
+    public function runAction()
+    {
+        $results = $this->helper->runTests();
+        $msg = implode('<br/>', $results);
+        Mage::app()->getResponse()->setBody($msg);
+    }
+
+}
