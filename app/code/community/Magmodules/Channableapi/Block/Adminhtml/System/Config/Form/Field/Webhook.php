@@ -50,7 +50,7 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Webhook
             $storeId = Mage::getModel('core/store')->load($code)->getId();
         }
 
-        return $this->helper->getItemUpdateWebhook($storeId, true);
+        return strtok($this->helper->getItemUpdateWebhook($storeId, true), '?');
     }
 
 }
