@@ -41,12 +41,12 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param $data
+     * @param $orderData
      * @param $request
      *
      * @return mixed|string
      */
-    public function validateJsonOrderData($data, $request)
+    public function validateJsonOrderData($orderData, $request)
     {
         $data = null;
         $test = $request->getParam('test');
@@ -56,7 +56,7 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         if ($test) {
             $data = $this->getTestJsonData($test, $lvb);
         } else {
-            $data = json_decode($data, true);
+            $data = json_decode($orderData, true);
             if (json_last_error() != JSON_ERROR_NONE) {
                 return $this->jsonResponse('Post not valid JSON-Data: ' . json_last_error_msg());
             }
@@ -83,7 +83,6 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         return $data;
-
     }
 
     /**
@@ -445,6 +444,9 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
             $config->saveConfig(self::XPATH_ITEM_ENABLED, 1, 'stores', $storeId);
             $response['msg'] = sprintf('Webhook set to %s', $url);
         }
+
+        Mage::getConfig()->reinit();
+        Mage::app()->reinitStores();
 
         return $response;
     }
