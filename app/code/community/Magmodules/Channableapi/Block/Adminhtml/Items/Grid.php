@@ -14,7 +14,7 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -58,10 +58,10 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
 
     /**
      * @return mixed
+     * @throws Exception
      */
     protected function _prepareColumns()
     {
-
         $store = $this->_getStore();
         $this->addColumn(
             'product_id', array(
@@ -85,9 +85,9 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
         }
 
         $this->addColumn(
-            'product_title', array(
+            'title', array(
                 'header' => Mage::helper('channableapi')->__('Product'),
-                'index'  => 'product_title',
+                'index'  => 'title',
             )
         );
 
@@ -102,19 +102,30 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
                     '1' => Mage::helper('channableapi')->__('Yes'),
                 ),
             )
+
         );
 
         $this->addColumn(
-            'delivery_time_nl', array(
-                'header' => Mage::helper('channableapi')->__('Delivery NL'),
-                'index'  => 'delivery_time_nl',
+            'stock', array(
+                'header' => Mage::helper('channableapi')->__('Stock'),
+                'width'  => '50px',
+                'index'  => 'stock',
+                'type'   => 'number',
             )
         );
 
         $this->addColumn(
-            'delivery_time_be', array(
-                'header' => Mage::helper('channableapi')->__('Delivery BE'),
-                'index'  => 'delivery_time_be',
+            'parent_id', array(
+                'header' => Mage::helper('channableapi')->__('Parent Id'),
+                'index'  => 'parent_id',
+                'type'   => 'number',
+            )
+        );
+
+        $this->addColumn(
+            'gtin', array(
+                'header' => Mage::helper('channableapi')->__('EAN/GTIN'),
+                'index'  => 'gtin',
             )
         );
 
@@ -132,26 +143,6 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
             'discount_price', array(
                 'header'        => Mage::helper('channableapi')->__('Discount Price'),
                 'index'         => 'discount_price',
-                'type'          => 'price',
-                'width'         => '80px',
-                'currency_code' => $store->getBaseCurrency()->getCode(),
-            )
-        );
-
-        $this->addColumn(
-            'delivery_cost_nl', array(
-                'header'        => Mage::helper('channableapi')->__('Shipping NL'),
-                'index'         => 'delivery_cost_nl',
-                'type'          => 'price',
-                'width'         => '80px',
-                'currency_code' => $store->getBaseCurrency()->getCode(),
-            )
-        );
-
-        $this->addColumn(
-            'delivery_cost_be', array(
-                'header'        => Mage::helper('channableapi')->__('Shipping BE'),
-                'index'         => 'delivery_cost_be',
                 'type'          => 'price',
                 'width'         => '80px',
                 'currency_code' => $store->getBaseCurrency()->getCode(),
@@ -222,10 +213,12 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
 
     /**
      * @return mixed
+     * @throws Exception
+     * @throws Mage_Core_Model_Store_Exception
      */
     protected function _getStore()
     {
-        $storeId = (int) $this->getRequest()->getParam('store', 0);
+        $storeId = (int)$this->getRequest()->getParam('store', 0);
 
         return Mage::app()->getStore($storeId);
     }

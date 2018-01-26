@@ -18,9 +18,21 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note
-    extends Mage_Adminhtml_Block_Abstract implements Varien_Data_Form_Element_Renderer_Interface
+class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Result
+    extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
+
+    /**
+     * Return element html.
+     *
+     * @param  Varien_Data_Form_Element_Abstract $element
+     *
+     * @return string
+     */
+    public function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
+    {
+        return $this->_toHtml();
+    }
 
     /**
      * @param Varien_Data_Form_Element_Abstract $element
@@ -30,11 +42,9 @@ class Magmodules_Channableapi_Block_Adminhtml_System_Config_Form_Field_Note
     public function render(Varien_Data_Form_Element_Abstract $element)
     {
         return sprintf(
-            '<tr id="row_%s">
-              <td colspan="5" class="label" style="margin-bottom: 10px;">%s</td>
-             </tr>',
-            $element->getHtmlId(),
-            $element->getLabel()
+            '<tr id="row_%s"><td colspan="5" class="label" style="margin-bottom: 10px;"><span id="result"><span id="test_result"></span></span></td></tr>',
+            $element->getHtmlId()
         );
     }
+
 }

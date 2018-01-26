@@ -14,7 +14,7 @@
  * @category      Magmodules
  * @package       Magmodules_Channableapi
  * @author        Magmodules <info@magmodules.eu>
- * @copyright     Copyright (c) 2017 (http://www.magmodules.eu)
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -36,91 +36,101 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
      */
     public function saveItemFeed($productData, $storeId)
     {
-        $id = $storeId . sprintf('%08d', $productData['id']);
+        if ($data = $this->reformatFeedData($productData, $storeId, 'add')) {
+            $item = $this->setData($data);
+            try {
+                $item->save();
+            } catch (\Exception $e) {
+                $this->addToLog('saveItemFeed', $e->getMessage(), 2);
+            }
+        }
+    }
+
+    /**
+     * @param $productData
+     * @param $storeId
+     * @param $type
+     *
+     * @return array
+     */
+    public function reformatFeedData($productData, $storeId, $type)
+    {
+        $data = array();
+        $data['item_id'] = $storeId . sprintf('%08d', $productData['id']);
+        $data['store_id'] = $storeId;
+        $data['product_id'] = $productData['id'];
+        $data['title'] = $productData['name'];
+        $data['stock'] = (isset($productData['qty']) ? round($productData['qty']) : '');
+        $data['parent_id'] = (isset($productData['item_group_id']) ? $productData['item_group_id'] : 0);
+        $data['gtin'] = (isset($productData['ean']) ? $productData['ean'] : 0);
+
+        if (isset($row['availability']) && $productData['availability'] == 'in stock') {
+            $data['is_in_stock'] = 1;
+        } else {
+            $data['is_in_stock'] = 1;
+        }
+
+        if ($type == 'update') {
+            $data['updated'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+        }
+
+        if ($type == 'add') {
+            $data['created_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+        }
 
         if (isset($productData['price'])) {
-            if (!empty($productData['special_price'])) {
-                $price = $productData['price'];
-                $discountPrice = $productData['special_price'];
+            if (!empty($productData['price'])) {
+                $data['price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['price']), 2);
             } else {
-                $price = $productData['price'];
-                $discountPrice = '';
+                $data['price'] = '0.00';
+            }
+            if (!empty($productData['special_price'])) {
+                $data['discount_price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['special_price']), 2);
+            } else {
+                $data['discount_price'] = '';
             }
 
-            $deliveryCostNl = '';
-            $deliveryCostBe = '';
-            if (!empty($productData['shipping'])) {
-                $deliveryCostNl = $productData['shipping'];
-                $deliveryCostBe = $productData['shipping'];
-            }
-
-            if (!empty($productData['shipping_nl'])) {
-                $deliveryCostNl = $productData['shipping_nl'];
-            }
-
-            if (!empty($productData['shipping_be'])) {
-                $deliveryCostBe = $productData['shipping_be'];
-            }
-
-            $deliveryTimeNl = '';
-            $deliveryTimeBe = '';
-            if (!empty($productData['delivery'])) {
-                $deliveryTimeNl = $productData['delivery'];
-            }
-
-            if (!empty($productData['delivery_be'])) {
-                $deliveryTimeBe = $productData['delivery_be'];
-            }
-
-            $qty = 0;
-            if (!empty($productData['qty'])) {
-                $qty = $productData['qty'];
-            }
-
-            $isInStock = 1;
-            if (!empty($productData['is_in_stock'])) {
-                $isInStock = $productData['is_in_stock'];
-            }
-
-            $this->setItemId($id)
-                ->setProductTitle($productData['name'])
-                ->setProductId($productData['id'])
-                ->setStoreId($storeId)
-                ->setPrice($price)
-                ->setQty($qty)
-                ->setIsInStock($isInStock)
-                ->setDiscountPrice($discountPrice)
-                ->setDeliveryCostNl($deliveryCostNl)
-                ->setDeliveryCostBe($deliveryCostBe)
-                ->setDeliveryTimeNl($deliveryTimeNl)
-                ->setDeliveryTimeBe($deliveryTimeBe)
-                ->setCreatedAt(now())
-                ->setUpdatedAt(now())
-                ->save();
+            return $data;
         }
+    }
+
+    /**
+     * @param      $type
+     * @param      $msg
+     * @param int  $level
+     * @param bool $force
+     */
+    public function addToLog($type, $msg, $level = 6, $force = false)
+    {
+        if (is_array($msg)) {
+            $msg = json_encode($msg);
+        }
+
+        Mage::helper('channableapi')->addToLog($type, $msg, $level, $force);
     }
 
     /**
      * @param      $productId
      * @param      $type
      * @param null $reason
-     * @param null $parent
-     * @param int  $storeId
      */
-    public function invalidateProduct($productId, $type, $reason = null, $parent = null, $storeId = 0)
+    public function invalidateProduct($productId, $type, $reason = null)
     {
-        $items = $this->getCollection()->addFieldToFilter('product_id', $productId);
-
-        if ($storeId != 0) {
-            $items->addFieldToFilter('store_id', $storeId);
-        }
+        $items = $this->getCollection()
+            ->addFieldToFilter(
+                array('product_id', 'parent_id'),
+                array(array('eq' => $productId), array('eq' => $productId))
+            );
 
         $log = Mage::getStoreConfig('channable_api/debug/log');
         foreach ($items->load() as $item) {
             $item->setNeedsUpdate('1')->setUpdatedAt(now())->save();
             if ($log) {
-                $message = 'Scheduled for item update, reason: ' . $reason;
-                Mage::getModel('channableapi/debug')->addToLog('Item Update', $type, $productId, $message, $parent);
+                $message = 'Scheduled for item update';
+                if ($reason) {
+                    $message .= ' -' . $reason;
+                }
+                Mage::getModel('channableapi/debug')->addToLog('Item Update', $type, $productId, $message);
             }
         }
     }
@@ -144,11 +154,11 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         }
 
         if (!empty($items)) {
-            $data = $this->processItems($items, $storeId, $config);
-            $results = $this->postItemUpdate($data, $config);
-            $updates = $this->updateItemRows($data, $results);
+            $postData = $this->getProductData($items, $storeId, $config);
+            $postResult = $this->postData($postData, $config);
+            $this->updateData($postResult);
 
-            return $updates;
+            return $postResult;
         }
 
         return false;
@@ -161,288 +171,183 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
      */
     public function getConfig($storeId)
     {
-        $config = array();
-        $config['store_id'] = $storeId;
-        $config['shipping_prices'] = @unserialize(Mage::getStoreConfig('channable/advanced/shipping_price', $storeId));
-        $config['shipping_method'] = Mage::getStoreConfig('channable/advanced/shipping_method', $storeId);
-        $config['delivery'] = Mage::getStoreConfig('channable/data/delivery', $storeId);
-        $config['delivery_be'] = Mage::getStoreConfig('channable/data/delivery_be', $storeId);
-        $config['delivery_att'] = Mage::getStoreConfig('channable/data/delivery_att', $storeId);
-        $config['delivery_att_be'] = Mage::getStoreConfig('channable/data/delivery_att_be', $storeId);
-        $config['delivery_in'] = Mage::getStoreConfig('channable/data/delivery_in', $storeId);
-        $config['delivery_in_be'] = Mage::getStoreConfig('channable/data/delivery_in_be', $storeId);
-        $config['delivery_out'] = Mage::getStoreConfig('channable/data/delivery_out', $storeId);
-        $config['delivery_out_be'] = Mage::getStoreConfig('channable/data/delivery_out_be', $storeId);
-        $config['price_add_tax'] = Mage::getStoreConfig('channable/data/add_tax', $storeId);
-        $config['price_add_tax_perc'] = Mage::getStoreConfig('channable/data/tax_percentage', $storeId);
-        $config['force_tax'] = Mage::getStoreConfig('channable/data/force_tax', $storeId);
-        $config['currency'] = Mage::app()->getStore($storeId)->getCurrentCurrencyCode();
-        $config['base_currency_code'] = Mage::app()->getStore($storeId)->getBaseCurrencyCode();
-        $config['markup'] = Mage::helper('channable')->getPriceMarkup($config);
-        $config['use_tax'] = Mage::helper('channable')->getTaxUsage($config);
+        $config = Mage::getModel('channable/channable')->getFeedConfig($storeId, 'API');
         $config['webhook'] = Mage::getStoreConfig('channable_api/item/webhook', $storeId);
         $config['limit'] = Mage::getStoreConfig('channable_api/crons/limit', $storeId);
         $config['token'] = Mage::getStoreConfig('channable/connect/token', $storeId);
         $config['debug'] = Mage::getStoreConfig('channable_api/debug/debug');
         $config['log'] = Mage::getStoreConfig('channable_api/debug/log');
-        $config['conf_enabled'] = Mage::getStoreConfig('channable/data/conf_enabled', $storeId);
-        $config['simple_price'] = Mage::getStoreConfig('channable/data/simple_price', $storeId);
-
-        if ($config['conf_enabled']) {
-            $fields = Mage::getStoreConfig('channable/data/conf_fields', $storeId);
-            $fields = explode(',', $fields);
-            if (in_array('name', $fields)) {
-                $config['parent_name'] = 1;
-            }
-        }
-
-        $attributes = array('name', 'status', 'weight');
-
-        if ($config['delivery'] == 'attribute') {
-            $attributes[] = $config['delivery_att'];
-        }
-
-        if ($config['delivery_be'] == 'attribute') {
-            $attributes[] = $config['delivery_att_be'];
-        }
-
-        $config['attributes'] = array_unique($attributes);
 
         if (empty($config['limit'])) {
             $config['limit'] = 20;
         }
 
-        if ($config['limit'] > 25) {
-            $config['limit'] = 25;
+        if ($config['limit'] > 50) {
+            $config['limit'] = 50;
         }
 
         return $config;
     }
 
     /**
-     * @param        $items
-     * @param        $storeId
-     * @param string $config
+     * @param $items
+     * @param $storeId
+     * @param $config
      *
      * @return array
      */
-    public function processItems($items, $storeId, $config = '')
+    public function getProductData($items, $storeId, $config = array())
     {
-        $data = array();
+        $productData = array();
+
+        /** @var Magmodules_Channable_Model_Channable $feedModel */
+        $feedModel = Mage::getModel('channable/channable');
+
+        /** @var Magmodules_Channable_Helper_Data $feedHelper */
+        $feedHelper = Mage::helper('channable');
+
         if (empty($config)) {
             $config = $this->getConfig($storeId);
         }
 
-        foreach ($items as $item) {
-            $data[] = $this->getItemData($item, $config);
-        }
+        try {
+            $productIds = $this->getProductIds($items);
 
-        return $data;
-    }
+            /** @var Mage_Core_Model_App_Emulation $appEmulation */
+            $appEmulation = Mage::getSingleton('core/app_emulation');
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
 
-    /**
-     * @param $productId
-     * @param $storeId
-     * @param $config
-     *
-     * @return mixed
-     */
-    public function getProductData($productId, $storeId, $config)
-    {
-        $product = Mage::getResourceModel('catalog/product_collection')
-            ->setStore($storeId)
-            ->addStoreFilter($storeId)
-            ->addFinalPrice()
-            ->addUrlRewrite()
-            ->addAttributeToFilter('entity_id', $productId)
-            ->addAttributeToSelect($config['attributes'])
-            ->getFirstItem();
+            $products = $feedModel->getProducts($config, $productIds)->load();
+            $parentRelations = $feedHelper->getParentsFromCollection($products, $config);
+            $parents = $feedModel->getParents($parentRelations, $config);
+            $prices = $feedHelper->getTypePrices($config, $parents);
+            $parentAttributes = $feedHelper->getConfigurableAttributesAsArray($parents, $config);
 
-        return $product;
-    }
+            foreach ($products as $product) {
 
-    /**
-     * @param $item
-     * @param $config
-     *
-     * @return array
-     */
-    public function getItemData($item, $config)
-    {
-        $update = array();
-        $product = $this->getProductData($item->getProductId(), $item->getStoreId(), $config);
-
-        if (!$product->getEntityId()) {
-            $update['item_id'] = $item->getItemId();
-            $update['id'] = $item->getProductId();
-            $update['title'] = $item->getProductTitle();
-            $update['stock'] = 0;
-            $update['availability'] = 0;
-            $update['price'] = $item->getPrice();
-            $update['discount_price'] = $item->getDiscountPrice();
-            $update['delivery_period_nl'] = 'out of stock';
-            $update['delivery_period_be'] = 'out of stock';
-            $update['shipping_price_nl'] = $item->getDeliveryCostNl();
-            $update['shipping_price_be'] = $item->getDeliveryCostBe();
-            return $update;
-        }
-
-        $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-        if ($parentId = Mage::helper('channable')->getParentData($product, $config)) {
-            $parent = $this->getProductData($parentId, $item->getStoreId(), $config);
-            $confPrices = Mage::helper('channable')->getTypePrices($config, array($parent));
-        } else {
-            $confPrices = '';
-            $parentId = '';
-        }
-
-        $update['item_id'] = $item->getItemId();
-        $update['id'] = $product->getEntityId();
-        $update['title'] = $product->getName();
-        $update['created'] = $product->getCreatedAt();
-        $update['modified'] = $item->getUpdatedAt();
-        $update['stock'] = round($stockItem->getQty());
-        $update['availability'] = 1;
-
-        $update['shipping_price_nl'] = '';
-        $update['shipping_price_be'] = '';
-        $update['delivery_period_nl'] = $config['delivery_in'];
-        $update['delivery_period_be'] = $config['delivery_in_be'];
-
-        if ($config['delivery'] == 'attribute') {
-            if (!empty($config['delivery_att'])) {
-                $update['delivery_period_nl'] = $product->getData($config['delivery_att']);
-            }
-        }
-
-        if ($config['delivery_be'] == 'attribute') {
-            if (!empty($config['delivery_att_be'])) {
-                $update['delivery_period_be'] = $product->getData($config['delivery_att_be']);
-            }
-        }
-
-        if (!$product->getIsSalable() || ($product->getStatus() == 2)) {
-            if ($config['delivery'] == 'fixed') {
-                $update['delivery_period_nl'] = $config['delivery_out'];
-            }
-
-            if ($config['delivery_be'] == 'fixed') {
-                $update['delivery_period_be'] = $config['delivery_out_be'];
-            }
-
-            $update['availability'] = 0;
-        }
-
-        $priceData = Mage::helper('channable')->getProductPrice($product, $config);
-        $prices = Mage::getModel('channable/channable')->getPrices($priceData, $confPrices, $product, '', $parentId);
-        $calValue = '0.00';
-
-        if (!empty($prices)) {
-            $update['price'] = preg_replace('/([^0-9\.,])/i', '', $prices['price']);
-            $calValue = $update['price'];
-            if (!empty($prices['special_price'])) {
-                $update['discount_price'] = preg_replace('/([^0-9\.,])/i', '', $prices['special_price']);
-                $calValue = $update['discount_price'];
-            }
-
-            if (!empty($prices['sales_price'])) {
-                $update['discount_price'] = preg_replace('/([^0-9\.,])/i', '', $prices['sales_price']);
-                $calValue = $update['discount_price'];
-            }
-        }
-
-        if ($config['shipping_method'] == 'weight') {
-            $calValue = $product->getWeight();
-        }
-
-        if (!empty($config['shipping_prices'])) {
-            foreach ($config['shipping_prices'] as $shippingPrice) {
-                if (($calValue >= $shippingPrice['price_from']) && ($calValue <= $shippingPrice['price_to'])) {
-                    $shippingCost = $shippingPrice['cost'];
-                    $shippingCost = number_format($shippingCost, 2, '.', '');
-                    if (empty($shippingPrice['country'])) {
-                        $shippingArray['shipping_all'] = $shippingCost;
-                    } else {
-                        $label = 'shipping_' . strtolower($shippingPrice['country']);
-                        $shippingArray[$label] = $shippingCost;
-                        if (strtolower($shippingPrice['country']) == 'nl') {
-                            $shippingArray['shipping'] = $shippingCost;
+                $parent = null;
+                $itemId = $storeId . sprintf('%08d', $product->getId());
+                if (!empty($parentRelations[$product->getEntityId()])) {
+                    foreach ($parentRelations[$product->getEntityId()] as $parentId) {
+                        if ($parent = $parents->getItemById($parentId)) {
+                            continue;
                         }
                     }
                 }
+
+                if ($dataRow = $feedHelper->getProductDataRow($product, $config, $parent, $parentAttributes)) {
+                    if ($extraData = $feedModel->getExtraDataFields($dataRow, $config, $product, $prices)) {
+                        $dataRow = array_merge($dataRow, $extraData);
+                    }
+                    $productData[$itemId] = $this->reformatFeedData($dataRow, $storeId, 'update');
+                }
             }
+
+            foreach ($items as $item) {
+                if (!isset($productData[$item->getItemId()])) {
+                    $productData[$item->getItemId()] = array(
+                        'item_id'        => $item->getItemId(),
+                        'product_id'     => $item->getProductId(),
+                        'title'          => $item->getTitle(),
+                        'price'          => number_format($item->getPrice(), 2),
+                        'discount_price' => number_format($item->getDiscountPrice(), 2),
+                        'gtin'           => $item->getGtin(),
+                        'parent_id'      => $item->getParentId(),
+                        'stock'          => 0,
+                        'availability'   => 0,
+                        'updated_at'     => Mage::getSingleton('core/date')->gmtDate('Y-m-d H:i:s'),
+                    );
+                }
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+        } catch (\Exception $e) {
+            $this->addToLog('getProductData', $e->getMessage(), 2);
         }
 
-        if (!empty($shippingArray['shipping_all'])) {
-            $update['shipping_price_nl'] = $shippingArray['shipping_all'];
-            $update['shipping_price_be'] = $shippingArray['shipping_all'];
-        }
-
-        if (!empty($shippingArray['shipping_nl'])) {
-            $update['shipping_price_nl'] = $shippingArray['shipping_nl'];
-        }
-
-        if (!empty($shippingArray['shipping_be'])) {
-            $update['shipping_price_be'] = $shippingArray['shipping_be'];
-        }
-
-        if (!empty($config['parent_name']) && !empty($parent)) {
-            $update['title'] = $parent->getName();
-        }
-
-        return $update;
+        return array_values($productData);
     }
 
     /**
-     * @param $updates
+     * @param $items
+     *
+     * @return array
+     */
+    public function getProductIds($items)
+    {
+        $productIds = array();
+        foreach ($items as $item) {
+            $productIds[] = $item->getProductId();
+        }
+
+        return $productIds;
+    }
+
+    /**
+     * @param $postData
      * @param $config
      *
      * @return array
      */
-    public function postItemUpdate($updates, $config)
+    public function postData($postData, $config)
     {
         $results = array();
-        $headers = array();
-        $headers[] = 'X-MAGMODULES-TOKEN: ' . $config['token'];
-        $headers[] = 'Content-Type:application/json';
+        $httpHeader = array('X-MAGMODULES-TOKEN: ' . $config['token'], 'Content-Type:application/json');
+
+        $post = array();
+        $skip = $this->getNonApiFields();
+        foreach ($postData as $id => $prod) {
+            foreach ($prod as $k => $v) {
+                if (in_array($k, $skip)) {
+                    continue;
+                }
+                if ($k == 'product_id') {
+                    $k = 'id';
+                }
+                $post[$id][$k] = $v;
+            }
+        }
 
         $request = curl_init();
         curl_setopt($request, CURLOPT_URL, $config['webhook']);
         curl_setopt($request, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($request, CURLOPT_POSTFIELDS, json_encode($updates));
-        curl_setopt($request, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($request, CURLOPT_POSTFIELDS, json_encode(array_values($post)));
+        curl_setopt($request, CURLOPT_HTTPHEADER, $httpHeader);
         curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($request);
         $header = curl_getinfo($request, CURLINFO_HTTP_CODE);
         curl_close($request);
 
         if ($header == '200') {
-            $results['status'] = 'SUCCESS';
-            $results['result'] = $result;
+            $results['status'] = 'success';
             $results['needs_update'] = 0;
-            $results['date'] = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
         } else {
-            $results['status'] = 'ERROR';
-            $results['result'] = $result;
+            $results['status'] = 'error';
             $results['needs_update'] = 1;
-            $results['date'] = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
         }
 
+        $results['result'] = json_decode($result, true);
+        $results['qty'] = count($postData);
+        $results['date'] = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
+        $results['store_id'] = $config['store_id'];
+        $results['webhook'] = $config['webhook'];
+        $results['post_data'] = $postData;
+
         if ($config['debug']) {
-            Mage::getSingleton('adminhtml/session')->addNotice('DEBUG: [' . json_encode($updates) . ']');
+            Mage::getSingleton('adminhtml/session')->addNotice('DEBUG: [' . json_encode($postData) . ']');
         }
 
         if (!empty($config['log'])) {
             $productsIds = array();
-            foreach ($updates as $update) {
-                $productsIds[] = $update['id'];
+            foreach ($postData as $update) {
+                $productsIds[] = $update['product_id'];
             }
 
             Mage::getModel('channableapi/debug')->addToLog(
                 'Item Update',
                 'API Call',
                 $productsIds,
-                json_encode($updates),
+                json_encode($postData),
                 '',
                 $results['status']
             );
@@ -452,35 +357,47 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
     }
 
     /**
-     * @param $updates
-     * @param $results
-     *
-     * @return mixed
+     * @return array
      */
-    public function updateItemRows($updates, $results)
+    public function getNonApiFields()
     {
-        $i = 0;
-        foreach ($updates as $update) {
-            $this->load($update['item_id'])
-                ->setProductTitle($update['title'])
-                ->setPrice($update['price'])
-                ->setDiscountPrice($update['discount_price'])
-                ->setDeliveryCostNl($update['shipping_price_nl'])
-                ->setDeliveryCostBe($update['shipping_price_be'])
-                ->setDeliveryTimeNl($update['delivery_period_nl'])
-                ->setDeliveryTimeBe($update['delivery_period_be'])
-                ->setIsInStock($update['availability'])
-                ->setNeedsUpdate($results['needs_update'])
-                ->setUpdatedAt(now())
-                ->setLastCall(now())
-                ->setCallResult($results['status'])
-                ->save();
-            $i++;
+        return array('item_id', 'availability', 'parent_id', 'updated_at', 'title');
+    }
+
+    /**
+     * @param $postResult
+     */
+    public function updateData($postResult)
+    {
+        $itemsResult = $postResult['result'];
+        $postData = $postResult['post_data'];
+        $items = isset($itemsResult['content']) ? $itemsResult['content'] : array();
+        $status = isset($postResult['status']) ? $postResult['status'] : '';
+        if ($status == 'success') {
+            foreach ($items as $item) {
+                $key = array_search($item['id'], array_column($postData, 'id'));
+                $postData[$key]['call_result'] = $item['message'];
+                $postData[$key]['status'] = ucfirst($item['status']);
+                $postData[$key]['needs_update'] = ($item['status'] == 'success') ? 0 : 1;
+                $postData[$key]['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+
+                if ($item['status'] == 'error') {
+                    $oldStatus = $this->load($postData[$key]['item_id'])->getStatus();
+                    if ($oldStatus == 'Error') {
+                        $postData[$key]['status'] = 'Not Found';
+                        $postData[$key]['needs_update'] = 0;
+                    }
+                }
+            }
         }
 
-        $results['updates'] = $i;
-
-        return $results;
+        foreach ($postData as $key => $data) {
+            try {
+                $this->setData($data)->save();
+            } catch (\Exception $e) {
+                $this->addToLog('updateData', $e->getMessage(), 2);
+            }
+        }
     }
 
     /**
