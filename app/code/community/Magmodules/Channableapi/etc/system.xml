@@ -272,7 +272,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <tooltip>Set a limit on the number of products for each update.</tooltip>
+                            <tooltip>Set a limit on the number of products for each update. The maximum allowed by Channable: 50</tooltip>
                         </limit>
                     </fields>
                 </crons>
