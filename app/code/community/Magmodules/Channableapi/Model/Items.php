@@ -153,7 +153,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
                 ->load();
         }
 
-        if (!empty($items)) {
+        if ($items->count()) {
             $postData = $this->getProductData($items, $storeId, $config);
             $postResult = $this->postData($postData, $config);
             $this->updateData($postResult);
@@ -210,9 +210,12 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
             $config = $this->getConfig($storeId);
         }
 
-        try {
-            $productIds = $this->getProductIds($items);
+        $productIds = $this->getProductIds($items);
+        if (empty($productIds)) {
+            return $productData;
+        }
 
+        try {
             /** @var Mage_Core_Model_App_Emulation $appEmulation */
             $appEmulation = Mage::getSingleton('core/app_emulation');
             $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
