@@ -80,12 +80,14 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
         if (isset($productData['price'])) {
             if (!empty($productData['price'])) {
-                $data['price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['price']), 2);
+                $priceClean = preg_replace('/([^0-9\.,])/i', '', $productData['price']);
+                $data['price'] = number_format($priceClean, 2, '.', '');
             } else {
                 $data['price'] = '0.00';
             }
             if (!empty($productData['special_price'])) {
-                $data['discount_price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['special_price']), 2);
+                $discountPriceClean = preg_replace('/([^0-9\.,])/i', '', $productData['special_price']);
+                $data['discount_price'] = number_format($discountPriceClean, 2, '.', '');
             } else {
                 $data['discount_price'] = '';
             }
@@ -145,23 +147,29 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
     {
         $config = $this->getConfig($storeId);
         if (empty($items)) {
-            $items = $this->getCollection()
+            $itemCollection = $this->getCollection()
                 ->addFieldToFilter('store_id', $storeId)
+                ->addFieldToFilter('needs_update', 1)
+                ->setOrder('updated_at', 'ASC')
                 ->setPageSize($config['limit'])
                 ->setCurPage(1)
-                ->addFieldToFilter('needs_update', 1)
                 ->load();
+
+            if (is_object($itemCollection) && $itemCollection->count()) {
+                $items = $itemCollection;
+            }
         }
 
-        if ($items->count()) {
+        if (!empty($items)) {
             $postData = $this->getProductData($items, $storeId, $config);
             $postResult = $this->postData($postData, $config);
             $this->updateData($postResult);
-
-            return $postResult;
+        } else {
+            $date = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
+            $postResult = array('status' => 'success', 'qty' => 0, 'updates' => 0, 'date' => $date, 'store_id' => $config['store_id']);
         }
 
-        return false;
+        return $postResult;
     }
 
     /**
@@ -331,13 +339,14 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
         $results['result'] = json_decode($result, true);
         $results['qty'] = count($postData);
+        $results['updates'] = count($postData);
         $results['date'] = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
         $results['store_id'] = $config['store_id'];
         $results['webhook'] = $config['webhook'];
         $results['post_data'] = $postData;
 
         if ($config['debug']) {
-            Mage::getSingleton('adminhtml/session')->addNotice('DEBUG: [' . json_encode($postData) . ']');
+            Mage::getSingleton('adminhtml/session')->addNotice('DEBUG: [' . json_encode($post) . ']');
         }
 
         if (!empty($config['log'])) {
@@ -364,7 +373,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
      */
     public function getNonApiFields()
     {
-        return array('item_id', 'availability', 'parent_id', 'updated_at', 'title');
+        return array('item_id', 'availability', 'parent_id', 'updated_at', 'title', 'store_id');
     }
 
     /**
@@ -376,25 +385,48 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         $postData = $postResult['post_data'];
         $items = isset($itemsResult['content']) ? $itemsResult['content'] : array();
         $status = isset($postResult['status']) ? $postResult['status'] : '';
+
         if ($status == 'success') {
             foreach ($items as $item) {
-                $key = array_search($item['id'], array_column($postData, 'id'));
+                $key = array_search($item['id'], array_column($postData, 'product_id'));
                 $postData[$key]['call_result'] = $item['message'];
                 $postData[$key]['status'] = ucfirst($item['status']);
                 $postData[$key]['needs_update'] = ($item['status'] == 'success') ? 0 : 1;
                 $postData[$key]['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
-
-                if ($item['status'] == 'error') {
-                    $oldStatus = $this->load($postData[$key]['item_id'])->getStatus();
-                    if ($oldStatus == 'Error') {
-                        $postData[$key]['status'] = 'Not Found';
-                        $postData[$key]['needs_update'] = 0;
+                $postData[$key]['updated_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+                $postData[$key]['attempts'] = 1;
+                if ($postData[$key]['needs_update']) {
+                    $oldItem = $this->load($postData[$key]['item_id']);
+                    if ($oldItem->getStatus() == 'Error') {
+                        $postData[$key]['attempts'] = $oldItem->getAttempts() + 1;
+                        if ($postData[$key]['attempts'] > 3) {
+                            $postData[$key]['status'] = 'Not Found';
+                            $postData[$key]['needs_update'] = 0;
+                        }
                     }
                 }
             }
         }
 
         foreach ($postData as $key => $data) {
+            if(!isset($data['status'])) {
+                $data['call_result'] = 'No result and/or error in post data';
+                $data['status'] = 'Error';
+                $data['needs_update'] = 1;
+                $data['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+                $data['updated_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+                $data['attempts'] = 1;
+                if ($data['needs_update']) {
+                    $oldItem = $this->load($data['item_id']);
+                    if ($oldItem->getStatus() == 'Error') {
+                        $data['attempts'] = $oldItem->getAttempts() + 1;
+                        if ($data['attempts'] > 3) {
+                            $data['status'] = 'Not Found';
+                            $data['needs_update'] = 0;
+                        }
+                    }
+                }
+            }
             try {
                 $this->setData($data)->save();
             } catch (\Exception $e) {

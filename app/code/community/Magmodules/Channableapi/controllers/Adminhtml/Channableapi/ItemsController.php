@@ -53,10 +53,18 @@ class Magmodules_Channableapi_Adminhtml_Channableapi_ItemsController extends Mag
             if (!empty($itemId)) {
                 $item = Mage::getModel('channableapi/items')->load($itemId);
                 $result = Mage::getModel('channableapi/items')->runUpdate($item->getStoreId(), array($item));
-                if ($result['status'] == 'SUCCESS') {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(
-                        Mage::helper('channableapi')->__('Item updated')
-                    );
+                if ($result['status'] == 'success') {
+                    if (!empty($result['result']['content'][0]['message'])) {
+                        Mage::getSingleton('adminhtml/session')->addSuccess(
+                            Mage::helper('channableapi')->__(
+                                'Item updated, result: %s',
+                                $result['result']['content'][0]['message'])
+                        );
+                    } else {
+                        Mage::getSingleton('adminhtml/session')->addSuccess(
+                            Mage::helper('channableapi')->__('Item updated')
+                        );
+                    }
                 } else {
                     Mage::getSingleton('adminhtml/session')->addError(
                         Mage::helper('channableapi')->__('Could not update item')
