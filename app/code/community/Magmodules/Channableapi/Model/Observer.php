@@ -38,7 +38,7 @@ class Magmodules_Channableapi_Model_Observer
                 $appEmulation = Mage::getSingleton('core/app_emulation');
                 $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
                 if ($result = Mage::getModel('channableapi/items')->runUpdate($storeId)) {
-                    if ($result['status'] == 'SUCCESS') {
+                    if ($result['status'] == 'success') {
                         $html = $result['status'] . ' - Updates: ' . $result['updates'] . '<br/>';
                         $html .= '<small>Date: ' . $result['date'] . ' - ';
                         $html .= 'Time: ' . number_format((microtime(true) - $timeStart), 4) . '</small>';
@@ -172,6 +172,8 @@ class Magmodules_Channableapi_Model_Observer
                 Mage::getSingleton('core/resource')->getConnection('core_read')->delete($debug, $where);
             }
         } catch (Exception $e) {
+            /** @var Magmodules_Channableapi_Model_Items $model */
+            $model = Mage::getModel('channableapi/items');
             $model->addTolog('cleanItems', $e->getMessage(), 2);
         }
     }

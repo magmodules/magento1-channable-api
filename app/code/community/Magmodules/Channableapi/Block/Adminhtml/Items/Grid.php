@@ -168,10 +168,11 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Grid extends Mage_Adminhtml_
         );
 
         $this->addColumn(
-            'call_result', array(
-                'header' => Mage::helper('channableapi')->__('Call Result'),
-                'width'  => '50px',
-                'index'  => 'call_result',
+            'status', array(
+                'header' => Mage::helper('channableapi')->__('Status'),
+                'width'  => '150px',
+                'index'  => 'status',
+                'renderer' => 'channableapi/adminhtml_items_renderer_status',
             )
         );
 

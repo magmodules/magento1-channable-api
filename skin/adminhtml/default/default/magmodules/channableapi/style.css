@@ -63,3 +63,20 @@
     float: right;
     margin-right: 10px;
 }
+
+a.chanable-tooltip span {
+    display: none;
+    padding: 2px 3px;
+    margin-left: 8px;
+    width: 550px;
+}
+
+a.chanable-tooltip:hover span {
+    display: block;
+    position: absolute;
+    background: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    color: #6C6C6C;
+    width: auto;
+    margin-right: 20px;
+}
