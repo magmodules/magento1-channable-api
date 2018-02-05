@@ -80,12 +80,14 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
         if (isset($productData['price'])) {
             if (!empty($productData['price'])) {
-                $data['price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['price']), 2);
+                $priceClean = preg_replace('/([^0-9\.,])/i', '', $productData['price']);
+                $data['price'] = number_format($priceClean, 2, '.', '');
             } else {
                 $data['price'] = '0.00';
             }
             if (!empty($productData['special_price'])) {
-                $data['discount_price'] = number_format(preg_replace('/([^0-9\.,])/i', '', $productData['special_price']), 2);
+                $discountPriceClean = preg_replace('/([^0-9\.,])/i', '', $productData['special_price']);
+                $data['discount_price'] = number_format($discountPriceClean, 2, '.', '');
             } else {
                 $data['discount_price'] = '';
             }
@@ -153,7 +155,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
                 ->setCurPage(1)
                 ->load();
 
-            if ($itemCollection->count()) {
+            if (is_object($itemCollection) && $itemCollection->count()) {
                 $items = $itemCollection;
             }
         }
@@ -164,7 +166,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
             $this->updateData($postResult);
         } else {
             $date = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
-            $postResult = array('status' => 'success', 'qty' => 0, 'date' => $date, 'store_id' => $config['store_id']);
+            $postResult = array('status' => 'success', 'qty' => 0, 'updates' => 0, 'date' => $date, 'store_id' => $config['store_id']);
         }
 
         return $postResult;
@@ -337,6 +339,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
         $results['result'] = json_decode($result, true);
         $results['qty'] = count($postData);
+        $results['updates'] = count($postData);
         $results['date'] = date("Y-m-d H:i:s", Mage::getModel('core/date')->timestamp(time()));
         $results['store_id'] = $config['store_id'];
         $results['webhook'] = $config['webhook'];
@@ -406,6 +409,24 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         }
 
         foreach ($postData as $key => $data) {
+            if(!isset($data['status'])) {
+                $data['call_result'] = 'No result and/or error in post data';
+                $data['status'] = 'Error';
+                $data['needs_update'] = 1;
+                $data['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+                $data['updated_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+                $data['attempts'] = 1;
+                if ($data['needs_update']) {
+                    $oldItem = $this->load($data['item_id']);
+                    if ($oldItem->getStatus() == 'Error') {
+                        $data['attempts'] = $oldItem->getAttempts() + 1;
+                        if ($data['attempts'] > 3) {
+                            $data['status'] = 'Not Found';
+                            $data['needs_update'] = 0;
+                        }
+                    }
+                }
+            }
             try {
                 $this->setData($data)->save();
             } catch (\Exception $e) {
