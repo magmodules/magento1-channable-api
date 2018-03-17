@@ -31,6 +31,12 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
     {
         $result = array();
 
+        if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+            $result[] = $this->getPass('Compatible PHP version: ' . PHP_VERSION);
+        } else {
+            $result[] = $this->getFail('Module requires PHP version >= 5.4, current version: ' . PHP_VERSION);
+        }
+
         if ($this->getEnabled()) {
             $result[] = $this->getPass('Channable API Module Enabled');
         } else {

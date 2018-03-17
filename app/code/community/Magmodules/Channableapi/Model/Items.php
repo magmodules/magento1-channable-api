@@ -118,6 +118,10 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
      */
     public function invalidateProduct($productId, $type, $reason = null)
     {
+        if ($productId < 1) {
+            return;
+        }
+
         $items = $this->getCollection()
             ->addFieldToFilter(
                 array('product_id', 'parent_id'),
