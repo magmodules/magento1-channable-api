@@ -23,9 +23,9 @@ $installer = $this;
 $installer->startSetup();
 
 try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_returns')} ADD INDEX channable_id(channable_id);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX parent_id(parent_id);");
 } catch (Exception $e) {
-    Mage::log('Channable Index (channable_returns): ' . $e->getMessage());
+    Mage::log($e->getMessage());
 }
 
 $installer->endSetup();
