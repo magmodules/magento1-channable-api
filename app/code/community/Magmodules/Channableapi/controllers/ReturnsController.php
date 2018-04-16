@@ -18,7 +18,7 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front_Action
+class Magmodules_Channableapi_ReturnsController extends Mage_Core_Controller_Front_Action
 {
 
     /**
@@ -27,17 +27,17 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
     public $helper;
 
     /**
-     * @var Magmodules_Channableapi_Model_Order
+     * @var Magmodules_Channableapi_Model_Returns
      */
-    public $orderModel;
+    public $returnsModel;
 
     /**
-     * Magmodules_Channableapi_OrderController constructor.
+     * Magmodules_Channableapi_ReturnsController constructor.
      */
     public function _construct()
     {
         $this->helper = Mage::helper('channableapi');
-        $this->orderModel = Mage::getModel('channableapi/order');
+        $this->returnsModel = Mage::getModel('channableapi/returns');
         parent::_construct();
     }
 
@@ -46,16 +46,16 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
      */
     public function indexAction()
     {
-        $orderData = null;
+        $returnData = null;
         $request = $this->getRequest();
         $storeId = $request->getParam('store');
-        $response = $this->helper->validateRequestData($request, 'order');
+        $response = $this->helper->validateRequestData($request, 'returns');
 
         if (empty($response['errors'])) {
             $data = file_get_contents('php://input');
-            $orderData = $this->helper->validateJsonOrderData($data, $request);
-            if (!empty($orderData['errors'])) {
-                $response = $orderData;
+            $returnData = $this->helper->validateJsonReturnData($data, $request);
+            if (!empty($returnData['errors'])) {
+                $response = $returnData;
             }
         }
 
@@ -64,7 +64,7 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
             $appEmulation = Mage::getSingleton('core/app_emulation');
             $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
             try {
-                $response = $this->orderModel->importOrder($orderData, $storeId);
+                $response = $this->returnsModel->importReturn($returnData, $storeId);
             } catch (Exception $e) {
                 $response = $this->helper->jsonResponse($e->getMessage());
             }
@@ -91,7 +91,7 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
         if ($enabled && $token && $code) {
             if ($code == $token) {
                 if ($id = $this->getRequest()->getParam('id')) {
-                    $response = $this->orderModel->getOrderById($id);
+                    $response = $this->returnsModel->getReturnStatus($id);
                 } else {
                     $response = $this->helper->jsonResponse('Missing ID');
                 }
@@ -109,39 +109,6 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
                 ->setHeader('Cache-control', 'no-cache', true)
                 ->setBody(json_encode($response));
         }
-    }
-
-    /**
-     * Webhook Action
-     */
-    public function webhookAction()
-    {
-        $webhookData = null;
-        $request = $this->getRequest();
-        $storeId = $request->getParam('store');
-        $response = $this->helper->validateRequestData($request, 'item');
-
-        if (empty($response['errors'])) {
-            $data = file_get_contents('php://input');
-            $webhookData = $this->helper->validateJsonWebhookData($data);
-            if (!empty($webhookData['errors'])) {
-                $response = $webhookData;
-            }
-        }
-
-        if (empty($response['errors'])) {
-            try {
-                $response = $this->helper->setWebhook($webhookData, $storeId);
-            } catch (Exception $e) {
-                $response = $this->helper->jsonResponse($e->getMessage());
-            }
-        }
-
-        $this->getResponse()
-            ->clearHeaders()
-            ->setHeader('Content-type', 'application/json', true)
-            ->setHeader('Cache-control', 'no-cache', true)
-            ->setBody(json_encode($response));
     }
 
 }

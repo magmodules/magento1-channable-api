@@ -30,4 +30,9 @@
             <block type="channableapi/adminhtml_items" name="channableapi"/>
         </reference>
     </adminhtml_channableapi_items_index>
+    <adminhtml_channableapi_returns_index>
+        <reference name="content">
+            <block type="channableapi/adminhtml_returns" name="channableapi"/>
+        </reference>
+    </adminhtml_channableapi_returns_index>
 </layout>

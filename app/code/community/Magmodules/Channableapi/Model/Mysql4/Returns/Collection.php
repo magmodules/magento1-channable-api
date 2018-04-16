@@ -18,15 +18,16 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/** @var $installer Mage_Catalog_Model_Resource_Setup */
-$installer = $this;
-$installer->startSetup();
+class Magmodules_Channableapi_Model_Mysql4_Returns_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
+{
 
-try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `attempts` smallint(5) DEFAULT 0 AFTER `last_call`;");
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `status` varchar(255) NOT NULL AFTER `last_call`;");
-} catch (Exception $e) {
-    Mage::log($e->getMessage());
+    /**
+     * Construct
+     */
+    public function _construct()
+    {
+        parent::_construct();
+        $this->_init('channableapi/returns');
+    }
+
 }
-
-$installer->endSetup();

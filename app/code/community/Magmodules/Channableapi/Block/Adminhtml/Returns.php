@@ -18,15 +18,19 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/** @var $installer Mage_Catalog_Model_Resource_Setup */
-$installer = $this;
-$installer->startSetup();
+class Magmodules_Channableapi_Block_Adminhtml_Returns extends Mage_Adminhtml_Block_Widget_Grid_Container
+{
 
-try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `attempts` smallint(5) DEFAULT 0 AFTER `last_call`;");
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `status` varchar(255) NOT NULL AFTER `last_call`;");
-} catch (Exception $e) {
-    Mage::log($e->getMessage());
+    /**
+     * Magmodules_Channableapi_Block_Adminhtml_Items constructor.
+     */
+    public function __construct()
+    {
+        $this->_controller = 'adminhtml_returns';
+        $this->_blockGroup = 'channableapi';
+        $this->_headerText = Mage::helper('channableapi')->__('Channable Return Requests');
+        parent::__construct();
+        $this->_removeButton('add');
+    }
+
 }
-
-$installer->endSetup();

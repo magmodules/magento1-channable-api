@@ -23,10 +23,9 @@ $installer = $this;
 $installer->startSetup();
 
 try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `attempts` smallint(5) DEFAULT 0 AFTER `last_call`;");
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `status` varchar(255) NOT NULL AFTER `last_call`;");
+    $installer->run("ALTER TABLE {$this->getTable('channable_returns')} ADD INDEX channable_id(channable_id);");
 } catch (Exception $e) {
-    Mage::log($e->getMessage());
+    Mage::log('Channable Index (channable_returns): ' . $e->getMessage());
 }
 
 $installer->endSetup();
