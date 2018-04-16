@@ -18,15 +18,24 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/** @var $installer Mage_Catalog_Model_Resource_Setup */
-$installer = $this;
-$installer->startSetup();
+class Magmodules_Channableapi_Block_Adminhtml_Returns_Renderer_Item
+    extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
+{
 
-try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `attempts` smallint(5) DEFAULT 0 AFTER `last_call`;");
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `status` varchar(255) NOT NULL AFTER `last_call`;");
-} catch (Exception $e) {
-    Mage::log($e->getMessage());
+    /**
+     * @param Varien_Object $row
+     *
+     * @return string with html link to order view
+     */
+    public function render(Varien_Object $row)
+    {
+        $itemField = null;
+        $itemData = json_decode($row->getData('item'), true);
+        if (!empty($itemData)) {
+            $itemField = sprintf('%sx %s (GTIN: %s)', $itemData['quantity'], $itemData['title'], $itemData['gtin']);
+        }
+
+        return $itemField;
+    }
+
 }
-
-$installer->endSetup();

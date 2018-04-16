@@ -22,11 +22,29 @@
 $installer = $this;
 $installer->startSetup();
 
-try {
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `attempts` smallint(5) DEFAULT 0 AFTER `last_call`;");
-    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD `status` varchar(255) NOT NULL AFTER `last_call`;");
-} catch (Exception $e) {
-    Mage::log($e->getMessage());
-}
+$installer->run(
+    sprintf(
+        "CREATE TABLE IF NOT EXISTS `%s`(
+        `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+        `store_id` smallint(5) DEFAULT NULL,
+        `order_id` bigint(11) DEFAULT NULL,
+        `channel_name` varchar(255) DEFAULT NULL,
+        `channel_id` bigint(11) DEFAULT NULL,
+        `channable_id` bigint(11) DEFAULT NULL,
+        `magento_order_id` int(10) DEFAULT NULL,
+        `magento_increment_id` varchar(50) DEFAULT NULL,	  
+        `item` text,
+        `customer_name` varchar(255) DEFAULT NULL,
+        `customer` text,
+        `address` text,
+        `reason` varchar(255) DEFAULT NULL,
+        `comment` varchar(255) DEFAULT NULL,
+        `status` varchar(255) DEFAULT NULL,
+        `created_at` timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
+        $this->getTable('channable_returns')
+    )
+);
 
 $installer->endSetup();

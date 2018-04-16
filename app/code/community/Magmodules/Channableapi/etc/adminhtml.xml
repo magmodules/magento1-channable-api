@@ -19,15 +19,26 @@
   -->
 <config>
     <menu>
-        <catalog>
+        <sales>
             <children>
-                <channableapi_items module="channableapi">
-                    <title>Channable Item Updates</title>
-                    <sort_order>20</sort_order>
-                    <action>adminhtml/channableapi_items/</action>
-                </channableapi_items>
+                <channableapi translate="title" module="channableapi">
+                    <title>Channable</title>
+                    <sort_order>997</sort_order>
+                    <children>
+                        <channableapi_items module="channableapi">
+                            <title>Item Updates</title>
+                            <sort_order>1</sort_order>
+                            <action>adminhtml/channableapi_items/</action>
+                        </channableapi_items>
+                        <channableapi_returns module="channableapi">
+                            <title>Return Requests</title>
+                            <sort_order>2</sort_order>
+                            <action>adminhtml/channableapi_returns/</action>
+                        </channableapi_returns>
+                    </children>
+                </channableapi>
             </children>
-        </catalog>
+        </sales>
     </menu>
     <acl>
         <resources>
@@ -44,15 +55,26 @@
                             </config>
                         </children>
                     </system>
-                    <catalog>
+                    <sales>
                         <children>
-                            <channableapi_items module="channableapi">
-                                <title>Channable Item Updates</title>
-                                <sort_order>20</sort_order>
-                                <action>adminhtml/channableapi_items/</action>
-                            </channableapi_items>
+                            <channableapi translate="title" module="channableapi">
+                                <title>Channable</title>
+                                <sort_order>997</sort_order>
+                                <children>
+                                    <channableapi_items module="channableapi">
+                                        <title>Item Updates</title>
+                                        <sort_order>1</sort_order>
+                                        <action>adminhtml/channableapi_items/</action>
+                                    </channableapi_items>
+                                    <channableapi_returns module="channableapi">
+                                        <title>Return Requests</title>
+                                        <sort_order>2</sort_order>
+                                        <action>adminhtml/channableapi_returns/</action>
+                                    </channableapi_returns>
+                                </children>
+                            </channableapi>
                         </children>
-                    </catalog>
+                    </sales>
                 </children>
             </admin>
         </resources>

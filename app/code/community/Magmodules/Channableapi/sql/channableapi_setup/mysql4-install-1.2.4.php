@@ -78,6 +78,8 @@ $installer->run(
 		`created_at` timestamp NULL DEFAULT NULL,
 		`updated_at` timestamp NULL DEFAULT NULL,
 		`last_call` timestamp NULL DEFAULT NULL,
+		`attempts` smallint(5) DEFAULT 0,
+		`status` varchar(255) NOT NULL,
 		`call_result` varchar(255) DEFAULT NULL,
 		`needs_update` smallint(5) NOT NULL DEFAULT '0',
 		PRIMARY KEY (`item_id`)
@@ -108,6 +110,7 @@ try {
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX created_at(created_at);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX updated_at(updated_at);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX needs_update(needs_update);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX parent_id(parent_id);");
 } catch (Exception $e) {
     Mage::log('Channable Index (install):' . $e->getMessage());
 }

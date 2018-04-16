@@ -30,6 +30,8 @@ class Magmodules_Channableapi_Block_Adminhtml_Widget_Info_Info extends Mage_Admi
     {
         $magentoVersion = Mage::getVersion();
         $moduleVersion = Mage::getConfig()->getNode()->modules->Magmodules_Channableapi->version;
+        /** @var Magmodules_Channableapi_Helper_Data $helper */
+        $helper = Mage::helper('channableapi');
         $logoLink = '//www.magmodules.eu/logo/channableapi/' . $moduleVersion . '/' . $magentoVersion . '/logo.png';
 
         $html = '<div style="background:url(\'' . $logoLink . '\') no-repeat scroll 15px center #EAF0EE;border:1px solid #CCCCCC;margin-bottom:10px;padding:10px 5px 5px 200px;">
@@ -51,7 +53,9 @@ class Magmodules_Channableapi_Block_Adminhtml_Widget_Info_Info extends Mage_Admi
            </tr>
           </table><br>
           <p class="icon-head head-sales-order"><strong>Read everything about the extension configuration in our <a href="http://www.magmodules.eu/help/channable-order-API" target="_blank">Knowledgebase</a></strong>.</p>    
-          <p class="icon-head head-compilation">Perform a <strong><a href="#selftest">Selftest</a></strong> to check your setup through the selftest button on the last tab of this configuration page.</p>   
+          <p class="icon-head head-compilation">Perform a <strong><a href="#selftest">Selftest</a></strong> to check your setup through the selftest button on the last tab of this configuration page.</p>  <br>
+          <p class="icon-head head-tag"><a href="' . $helper->getBackendUrl('adminhtml/channableapi_items') . '" target="_blank">Open the Channable Product Update Table.</a></p>    
+          <p class="icon-head head-tag"><a href="' . $helper->getBackendUrl('adminhtml/channableapi_returns') . '" target="_blank">Open the Channable Return Request Table.</a></p>    
          </div>';
 
         return $html;

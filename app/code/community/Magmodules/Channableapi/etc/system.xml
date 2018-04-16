@@ -192,6 +192,7 @@
                             <show_in_default>0</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>1</show_in_store>
+                            <comment><![CDATA[Enable if you want to automatically create an invoice on the order import and set the order state to <b>Processing</b> (default invoice order state) instead of <b>Pending</b>.]]></comment>
                         </invoice_order>
                         <channel_orderid translate="label">
                             <label>Use channel Order ID</label>

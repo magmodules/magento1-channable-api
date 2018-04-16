@@ -78,6 +78,8 @@ $installer->run(
 		`created_at` timestamp NULL DEFAULT NULL,
 		`updated_at` timestamp NULL DEFAULT NULL,
 		`last_call` timestamp NULL DEFAULT NULL,
+		`attempts` smallint(5) DEFAULT 0,
+		`status` varchar(255) NOT NULL,
 		`call_result` varchar(255) DEFAULT NULL,
 		`needs_update` smallint(5) NOT NULL DEFAULT '0',
 		PRIMARY KEY (`item_id`)
@@ -102,12 +104,38 @@ $installer->run(
     )
 );
 
+$installer->run(
+    sprintf(
+        "CREATE TABLE IF NOT EXISTS `%s`(
+        `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+        `store_id` smallint(5) DEFAULT NULL,
+        `order_id` bigint(11) DEFAULT NULL,
+        `channel_name` varchar(255) DEFAULT NULL,
+        `channel_id` bigint(11) DEFAULT NULL,
+        `channable_id` bigint(11) DEFAULT NULL,
+        `magento_order_id` int(10) DEFAULT NULL,
+        `magento_increment_id` varchar(50) DEFAULT NULL,	  
+        `item` text,
+        `customer_name` varchar(255) DEFAULT NULL,
+        `customer` text,
+        `address` text,
+        `reason` varchar(255) DEFAULT NULL,
+        `comment` varchar(255) DEFAULT NULL,
+        `status` varchar(255) DEFAULT NULL,
+        `created_at` timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
+        $this->getTable('channable_returns')
+    )
+);
+
 try {
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX product_id(product_id);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX store_id(store_id);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX created_at(created_at);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX updated_at(updated_at);");
     $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX needs_update(needs_update);");
+    $installer->run("ALTER TABLE {$this->getTable('channable_items')} ADD INDEX parent_id(parent_id);");
 } catch (Exception $e) {
     Mage::log('Channable Index (install):' . $e->getMessage());
 }

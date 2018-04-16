@@ -35,7 +35,7 @@ class Magmodules_Channableapi_Adminhtml_Channableapi_ItemsController extends Mag
      */
     protected function _initAction()
     {
-        $this->loadLayout()->_setActiveMenu('catalog/channableapi')->_addBreadcrumb(
+        $this->loadLayout()->_setActiveMenu('sales/channableapi')->_addBreadcrumb(
             Mage::helper('channableapi')->__('Channable Items'),
             Mage::helper('channableapi')->__('Channable Items')
         );
@@ -118,7 +118,7 @@ class Magmodules_Channableapi_Adminhtml_Channableapi_ItemsController extends Mag
      */
     protected function _isAllowed()
     {
-        return Mage::getSingleton('admin/session')->isAllowed('admin/catalog/channableapi_items');
+        return Mage::getSingleton('admin/session')->isAllowed('sales/channableapi/channableapi_items');
     }
 
 }

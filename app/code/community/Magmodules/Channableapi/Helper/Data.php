@@ -56,6 +56,9 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         if ($test) {
             $data = $this->getTestJsonData($test, $lvb);
         } else {
+            if ($orderData == null) {
+                return $this->jsonResponse('Post data empty!');
+            }
             $data = json_decode($orderData, true);
             if (json_last_error() != JSON_ERROR_NONE) {
                 return $this->jsonResponse('Post not valid JSON-Data: ' . json_last_error_msg());
@@ -94,6 +97,7 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
     public function getTestJsonData($productId, $lvb = false)
     {
         $orderStatus = $lvb ? 'shipped' : 'not_shipped';
+        /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::getModel('catalog/product')->load($productId);
         if ($product) {
             $data = '{"channable_id": 112345, "channel_id": 123456, "channel_name": "Bol", 
@@ -130,7 +134,7 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return mixed
      */
-    public function jsonResponse($errors = '', $orderId = '', $channableId = '')
+    public function jsonResponse($errors = null, $orderId = null, $channableId = null)
     {
         $response = array();
         if (!empty($orderId)) {
@@ -143,14 +147,55 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
 
         $logEnabled = Mage::getStoreConfig('channable_api/debug/log');
         if ($logEnabled) {
+            /** @var Magmodules_Channableapi_Model_Debug $debugModel */
+            $debugModel = Mage::getModel('channableapi/debug');
             if ($response['validated'] == 'true') {
-                Mage::getModel('channableapi/debug')->orderSuccess($orderId);
+                $debugModel->orderSuccess($orderId);
             } else {
-                Mage::getModel('channableapi/debug')->orderError($errors, $channableId);
+                $debugModel->orderError($errors, $channableId);
             }
         }
 
         return $response;
+    }
+
+    /**
+     * @param $returnData
+     * @param $request
+     *
+     * @return mixed|string
+     */
+    public function validateJsonReturnData($returnData, $request)
+    {
+        $data = null;
+
+        if ($returnData == null) {
+            return $this->jsonResponse('Post data empty!');
+        }
+
+        $data = json_decode($returnData, true);
+        if (json_last_error() != JSON_ERROR_NONE) {
+            return $this->jsonResponse('Post not valid JSON-Data: ' . json_last_error_msg());
+        }
+
+        $storeId = $request->getParam('store');
+        if (empty($storeId)) {
+            return $this->jsonResponse('Missing Store ID in request');
+        }
+
+        if (empty($data)) {
+            return $this->jsonResponse('No Order Data in post');
+        }
+
+        if (empty($data['channable_id'])) {
+            return $this->jsonResponse('Post missing channable_id');
+        }
+
+        if (empty($data['channel_id'])) {
+            return $this->jsonResponse('Post missing channel_id');
+        }
+
+        return $data;
     }
 
     /**
@@ -230,7 +275,9 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         $whitelisted = Mage::getStoreConfig(self::XPATH_WHITELISTED);
         if (!empty($whitelisted)) {
             $ips = explode(',', $whitelisted);
-            $ip = Mage::helper('core/http')->getRemoteAddr(true);
+            /** @var Mage_Core_Helper_Http $coreHelper */
+            $coreHelper = Mage::helper('core/http');
+            $ip = $coreHelper->getRemoteAddr(true);
             if (!in_array($ip, $ips)) {
                 $response = array();
                 $response['validated'] = 'false';
@@ -434,6 +481,7 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         $response = array();
         $response['validated'] = 'true';
 
+        /** @var Mage_Core_Model_Config $config */
         $config = Mage::getModel('core/config');
         if (empty($url)) {
             $config->saveConfig(self::XPATH_WEBHOOK_ITEM, '', 'stores', $storeId);
@@ -473,6 +521,19 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
     public function getCronExpression()
     {
         return Mage::getStoreConfig(self::XPATH_CRON_FREQUENCY);
+    }
+
+    /**
+     * @param $path
+     * @param $params
+     *
+     * @return string
+     */
+    public function getBackendUrl($path, $params = array())
+    {
+        /** @var Mage_Adminhtml_Helper_Data $helper */
+        $helper = Mage::helper("adminhtml");
+        return $helper->getUrl($path, $params);
     }
 
     /**
