@@ -48,7 +48,11 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
         if ($this->isChannableInstalled()) {
             $result[] = $this->getPass('Channable Feed Module Installed');
         } else {
-            $result[] = $this->getFail('Channable Feed Module Missing!');
+            $msg = $this->__(
+                'Required Channable Feed Module Missing! %s',
+                '<a href="' . self::GITHUB_CHANABLE_URL . '">[' . $this->__('Download') . ']</a>'
+            );
+            $result[] = $this->getFail($msg);
         }
 
         if (!$this->getToken()) {
