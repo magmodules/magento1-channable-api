@@ -23,6 +23,8 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
 
     const SUPPORT_URL = 'https://www.magmodules.eu/help/channable-connect/channable-selftest-results';
     const GITHUB_URL = 'https://api.github.com/repos/magmodules/magento1-channable-api/tags';
+    const GITHUB_CHANABLE_API_URL = 'https://github.com/magmodules/magento1-channable-api/releases';
+    const GITHUB_CHANABLE_URL = 'https://github.com/magmodules/magento1-channable/releases';
 
     /**
      *
@@ -46,7 +48,11 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
         if ($this->isChannableInstalled()) {
             $result[] = $this->getPass('Channable Feed Module Installed');
         } else {
-            $result[] = $this->getFail('Channable Feed Module Missing!');
+            $msg = $this->__(
+                'Required Channable Feed Module Missing! %s',
+                '<a href="' . self::GITHUB_CHANABLE_URL . '">[' . $this->__('Download') . ']</a>'
+            );
+            $result[] = $this->getFail($msg);
         }
 
         if (!$this->getToken()) {
@@ -97,8 +103,10 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
                     $latestVersion['version']);
                 $result[] = $this->getPass($msg);
             } else {
-                $msg = $this->__('v%s is latest version, currenlty running v%s, please update!',
-                    $latestVersion['version'], $currentVersion);
+                $msg = $this->__('v%s is latest version, currenlty running v%s. %s',
+                    $latestVersion['version'],
+                    $currentVersion,
+                    '<a href="' . self::GITHUB_CHANABLE_API_URL . '">[' . $this->__('Download') . ']</a>');
                 $result[] = $this->getNotice($msg, '#update');
             }
         } else {
@@ -258,9 +266,11 @@ class Magmodules_Channableapi_Helper_Selftest extends Magmodules_Channableapi_He
         } else {
             return array(
                 'error' => $this->__(
-                    'Channable Feed Module needs update (Installed: v%s - Min. required: v%s)',
+                    'Channable Feed Module needs update (Installed: v%s - Min. required: v%s). %s',
                     $currentVersion,
-                    self::FEED_MIN_REQUIREMENT)
+                    self::FEED_MIN_REQUIREMENT,
+                    '<a href="' . self::GITHUB_CHANABLE_URL . '">[' . $this->__('Download') . ']</a>'
+                )
             );
         }
     }
