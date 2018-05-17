@@ -280,7 +280,10 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
             $this->addToLog('getProductData', $e->getMessage(), 2);
         }
 
-        return array_values($productData);
+        $productData = new Varien_Object($productData);
+        Mage::dispatchEvent('channable_item_update_before', array('item_data' => $productData));
+
+        return array_values($productData->getData());
     }
 
     /**
