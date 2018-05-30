@@ -159,6 +159,11 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
                 Mage::getModel('core/resource_transaction')->addObject($invoice)->addObject($invoice->getOrder())->save();
                 $_order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+
+                if ($status = Mage::helper('channableapi')->getProcessingStatus($storeId)) {
+                    $_order->setStatus($status);
+                }
+
                 $_order->save();
             } catch (Exception $e) {
                 $this->addToLog('importOrder', $e->getMessage(), 2);
@@ -661,5 +666,47 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         } else {
             return false;
         }
+    }
+
+    /**
+     * @param $timespan
+     *
+     * @return array
+     */
+    public function getShipments($timespan)
+    {
+        $response = array();
+        $expression = sprintf('- %s hours', $timespan);
+        $gmtDate = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
+        $date = date('Y-m-d H:i:s', strtotime($expression, strtotime($gmtDate)));
+
+        $shipments = Mage::getResourceModel('sales/order_shipment_collection')
+            ->addFieldToFilter('main_table.created_at', array('from' => $date))
+            ->join(
+                array('order' => 'sales/order'),
+                'main_table.order_id=order.entity_id',
+                array(
+                    'order_increment_id' => 'order.increment_id',
+                    'channable_id'       => 'order.channable_id',
+                    'status'             => 'order.status'
+                )
+            )
+            ->addFieldToFilter('channable_id', array('gt' => 0));
+
+        foreach ($shipments as $shipment) {
+            $data['id'] = $shipment->getOrderIncrementId();
+            $data['status'] = $shipment->getStatus();
+            $data['date'] = Mage::getModel('core/date')->date('Y-m-d H:i:s', $shipment->getCreatedAt());
+            foreach ($shipment->getAllTracks() as $tracknum) {
+                $data['fulfillment']['tracking_code'][] = $tracknum->getNumber();
+                $data['fulfillment']['title'][] = $tracknum->getTitle();
+                $data['fulfillment']['carrier_code'][] = $tracknum->getCarrierCode();
+            }
+
+            $response[] = $data;
+            unset($data);
+        }
+
+        return $response;
     }
 }

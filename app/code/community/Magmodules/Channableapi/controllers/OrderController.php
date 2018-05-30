@@ -112,6 +112,37 @@ class Magmodules_Channableapi_OrderController extends Mage_Core_Controller_Front
     }
 
     /**
+     * Shipments Action
+     */
+    public function shipmentsAction()
+    {
+        $enabled = $this->helper->getEnabled();
+        $token = $this->helper->getToken();
+        $code = $this->getRequest()->getParam('code');
+
+        if ($enabled && $token && $code) {
+            if ($code == $token) {
+                $timespan = intval($this->getRequest()->getParam('timespan'));
+                if ($timespan >= 1 && $timespan <= 336) {
+                    $response = $this->orderModel->getShipments($timespan);
+                } else {
+                    $response = $this->helper->jsonResponse('Invalid timespan, supported range: 1-336');
+                }
+            } else {
+                $response = $this->helper->jsonResponse('Unknown Token');
+            }
+        } else {
+            $response = $this->helper->jsonResponse('Extension not enabled!');
+        }
+
+        $this->getResponse()
+            ->clearHeaders()
+            ->setHeader('Content-type', 'application/json', true)
+            ->setHeader('Cache-control', 'no-cache', true)
+            ->setBody(json_encode($response));
+    }
+
+    /**
      * Webhook Action
      */
     public function webhookAction()
