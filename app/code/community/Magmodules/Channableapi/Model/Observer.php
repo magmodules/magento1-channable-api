@@ -32,31 +32,40 @@ class Magmodules_Channableapi_Model_Observer
         }
 
         try {
+            /** @var Magmodules_Channableapi_Model_Items $itemModel */
+            $itemModel = Mage::getModel('channableapi/items');
             $stores = Mage::helper('channableapi')->getEnabledItemStores();
             foreach ($stores as $storeId) {
                 $timeStart = microtime(true);
+                /** @var Mage_Core_Model_App_Emulation $appEmulation */
                 $appEmulation = Mage::getSingleton('core/app_emulation');
                 $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-                if ($result = Mage::getModel('channableapi/items')->runUpdate($storeId)) {
+                if ($result = $itemModel->runUpdate($storeId)) {
                     if ($result['status'] == 'success') {
-                        $html = $result['status'] . ' - Updates: ' . $result['updates'] . '<br/>';
-                        $html .= '<small>Date: ' . $result['date'] . ' - ';
-                        $html .= 'Time: ' . number_format((microtime(true) - $timeStart), 4) . '</small>';
-                    } else {
-                        $html = $result['status'] . '<br/><small>Date: ' . $result['date'] . ' - ';
-                        $html .= 'Time: ' . number_format((microtime(true) - $timeStart), 4) . '</small>';
-                    }
+                        $html = sprintf(
+                            '%s - Updates: %s <br/><small>Date: %s - Time %s</small>',
+                            $result['status'],
+                            $result['updates'],
+                            $result['date'],
+                            number_format((microtime(true) - $timeStart))
+                        );
 
-                    $config = new Mage_Core_Model_Config();
+                    } else {
+                        $html = sprintf(
+                            '%s<br/><small>Date: %s - Time %s</small>',
+                            $result['status'],
+                            $result['date'],
+                            number_format((microtime(true) - $timeStart))
+                        );
+                    }
+                    /** @var Mage_Core_Model_Config $config */
+                    $config = Mage::getModel('core/config');
                     $config->saveConfig('channable_api/item/result', $html, 'stores', $storeId);
                 }
-
                 $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
             }
         } catch (\Exception $e) {
-            /** @var Magmodules_Channableapi_Model_Items $model */
-            $model = Mage::getModel('channableapi/items');
-            $model->addTolog('catalog_product_save_before', $e->getMessage(), 2);
+            $itemModel->addTolog('catalog_product_save_before', $e->getMessage(), 2);
         }
     }
 
@@ -72,18 +81,18 @@ class Magmodules_Channableapi_Model_Observer
             return $this;
         }
 
-        /** @var Magmodules_Channableapi_Model_Items $model */
-        $model = Mage::getModel('channableapi/items');
+        /** @var Magmodules_Channableapi_Model_Items $itemModel */
+        $itemModel = Mage::getModel('channableapi/items');
         $type = 'Product Edit';
 
         try {
             /** @var Mage_Catalog_Model_Product $product */
             $product = $observer->getProduct();
             if ($product->hasDataChanges()) {
-                $model->invalidateProduct($product->getId(), $type);
+                $itemModel->invalidateProduct($product->getId(), $type);
             }
         } catch (\Exception $e) {
-            $model->addTolog('catalog_product_save_before', $e->getMessage(), 2);
+            $itemModel->addTolog('catalog_product_save_before', $e->getMessage(), 2);
         }
 
         return $this;
@@ -101,17 +110,17 @@ class Magmodules_Channableapi_Model_Observer
             return $this;
         }
 
-        /** @var Magmodules_Channableapi_Model_Items $model */
-        $model = Mage::getModel('channableapi/items');
+        /** @var Magmodules_Channableapi_Model_Items $itemModel */
+        $itemModel = Mage::getModel('channableapi/items');
         $type = 'Inventory Change';
 
         try {
             $item = $observer->getEvent()->getItem();
             if ($item->getStockStatusChangedAuto() || ($item->getQtyCorrection() != 0)) {
-                $model->invalidateProduct($item->getProductId(), $type);
+                $itemModel->invalidateProduct($item->getProductId(), $type);
             }
         } catch (\Exception $e) {
-            $model->addTolog('cataloginventory_stock_item_save_after', $e->getMessage(), 2);
+            $itemModel->addTolog('cataloginventory_stock_item_save_after', $e->getMessage(), 2);
         }
 
         return $this;
@@ -129,18 +138,18 @@ class Magmodules_Channableapi_Model_Observer
             return $this;
         }
 
-        /** @var Magmodules_Channableapi_Model_Items $model */
-        $model = Mage::getModel('channableapi/items');
+        /** @var Magmodules_Channableapi_Model_Items $itemModel */
+        $itemModel = Mage::getModel('channableapi/items');
 
         try {
             $type = 'Sales Order';
             $reason = 'Item Ordered';
             $quote = $observer->getEvent()->getQuote();
             foreach ($quote->getAllItems() as $item) {
-                $model->invalidateProduct($item->getProductId(), $type, $reason);
+                $itemModel->invalidateProduct($item->getProductId(), $type, $reason);
             }
         } catch (\Exception $e) {
-            $model->addTolog('sales_model_service_quote_submit_before', $e->getMessage(), 2);
+            $itemModel->addTolog('sales_model_service_quote_submit_before', $e->getMessage(), 2);
         }
 
         return $this;
@@ -155,6 +164,9 @@ class Magmodules_Channableapi_Model_Observer
         if ($enabled) {
             return $this;
         }
+
+        /** @var Magmodules_Channableapi_Model_Items $itemModel */
+        $itemModel = Mage::getModel('channableapi/items');
 
         try {
             $stores = Mage::helper('channableapi')->getEnabledItemStores();
@@ -172,9 +184,7 @@ class Magmodules_Channableapi_Model_Observer
                 Mage::getSingleton('core/resource')->getConnection('core_read')->delete($debug, $where);
             }
         } catch (Exception $e) {
-            /** @var Magmodules_Channableapi_Model_Items $model */
-            $model = Mage::getModel('channableapi/items');
-            $model->addTolog('cleanItems', $e->getMessage(), 2);
+            $itemModel->addTolog('cleanItems', $e->getMessage(), 2);
         }
     }
 

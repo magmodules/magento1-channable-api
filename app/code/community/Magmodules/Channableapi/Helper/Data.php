@@ -31,6 +31,8 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
     const XPATH_ITEM_RESULT = 'channable_api/item/result';
     const XPATH_WHITELISTED = 'channable_api/general/whitelisted_ips';
     const XPATH_CRON_FREQUENCY = 'channable_api/crons/frequency';
+    const XPATH_USE_CUSTOM_STATUS = 'channable_api/order/use_custom_status';
+    const XPATH_CUSTOM_STATUS = 'channable_api/order/custom_status';
 
     /**
      * @return mixed
@@ -535,6 +537,22 @@ class Magmodules_Channableapi_Helper_Data extends Mage_Core_Helper_Abstract
         $helper = Mage::helper("adminhtml");
         return $helper->getUrl($path, $params);
     }
+
+    /**
+     * @param null $storeId
+     *
+     * @return mixed
+     */
+    public function getProcessingStatus($storeId = null)
+    {
+        $useCustomStatus = Mage::getStoreConfig(self::XPATH_USE_CUSTOM_STATUS, $storeId);
+        if (!$useCustomStatus) {
+            return null;
+        }
+
+        return Mage::getStoreConfig(self::XPATH_CUSTOM_STATUS, $storeId);
+    }
+
 
     /**
      * @param      $type

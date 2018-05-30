@@ -130,7 +130,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
 
         $log = Mage::getStoreConfig('channable_api/debug/log');
         foreach ($items->load() as $item) {
-            $item->setNeedsUpdate('1')->setUpdatedAt(now())->save();
+            $item->setNeedsUpdate('1')->setUpdatedAt(now())->setStatus('In Que')->setResult('')->save();
             if ($log) {
                 $message = 'Scheduled for item update';
                 if ($reason) {
@@ -366,7 +366,7 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
                 'Item Update',
                 'API Call',
                 $productsIds,
-                json_encode($postData),
+                json_encode($post),
                 '',
                 $results['status']
             );
@@ -416,8 +416,14 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
         }
 
         foreach ($postData as $key => $data) {
-            if(!isset($data['status'])) {
-                $data['call_result'] = 'No result and/or error in post data';
+            if (!isset($data['status'])) {
+
+                if (isset($itemsResult['message'])) {
+                    $data['call_result'] = $itemsResult['message'];
+                } else {
+                    $data['call_result'] = 'Empty return data, please check webhook url or project settings.';
+                }
+
                 $data['status'] = 'Error';
                 $data['needs_update'] = 1;
                 $data['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
@@ -447,8 +453,11 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
      */
     public function cleanItemStore($storeId)
     {
-        $table = Mage::getSingleton('core/resource')->getTableName('channable_items');
-        $where = 'store_id = ' . $storeId . ' AND created_at < ' . strtotime("-2 days");
-        Mage::getSingleton('core/resource')->getConnection('core_write')->delete($table, $where);
+        /** @var Mage_Core_Model_Resource $resource */
+        $resource = Mage::getSingleton('core/resource');
+        $itemTable = $resource->getTableName('channable_items');
+
+        $where = "store_id = " . $storeId . " AND created_at < " . strtotime("-2 days");
+        $resource->getConnection('core_write')->delete($itemTable, $where);
     }
 }
