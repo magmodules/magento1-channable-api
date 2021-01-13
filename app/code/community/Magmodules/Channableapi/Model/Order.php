@@ -42,6 +42,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getModel('sales/quote')->setStoreId($config['store_id']);
+        $quote->setBaseCurrencyCode($config['currency_code']);
 
         if ($config['import_customers']) {
             $customer = $this->importCustomer($order, $config);
@@ -231,6 +232,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $config['channel_orderid'] = Mage::getStoreConfig('channable_api/order/channel_orderid', $storeId);
         $config['lvb_stock'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
         $config['lvb_ship'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
+        $config['currency_code'] = Mage::getStoreConfig('currency/options/default', $storeId);
         return $config;
     }
 
