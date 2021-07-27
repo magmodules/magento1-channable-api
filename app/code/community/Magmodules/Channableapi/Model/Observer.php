@@ -116,8 +116,15 @@ class Magmodules_Channableapi_Model_Observer
 
         try {
             $item = $observer->getEvent()->getItem();
-            if ($item->getStockStatusChangedAuto() || ($item->getQtyCorrection() != 0)) {
-                $itemModel->invalidateProduct($item->getProductId(), $type);
+            $itemOrg = $observer->getEvent()->getItem()->getOrigData();
+            $compareFields = array('qty', 'is_in_stock', 'manage_stock', 'use_config_manage_stock');
+            foreach ($compareFields as $key) {
+                $org = isset($itemOrg[$key]) ? (int)$itemOrg[$key] : null;
+                $new = isset($item[$key]) ? (int)$item[$key] : null;
+                if (($org !== null && $new !== null) && $new !== $org) {
+                    $itemModel->invalidateProduct($item->getProductId(), $type);
+                    break;
+                }
             }
         } catch (\Exception $e) {
             $itemModel->addTolog('cataloginventory_stock_item_save_after', $e->getMessage(), 2);
